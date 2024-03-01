@@ -8,6 +8,17 @@ CONFIG += c++11
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+contains(QMAKESPEC,.*linux-rasp-pi\d*-.*){
+    message(rpi detected)
+    CONFIG += rpi
+    DEFINES += RPI
+}
+
+unix:rpi:
+{
+    LIBS += -L/home/zoli/pi4_bullseye/sysroot/usr/lib/arm-linux-gnueabihf
+}
+
 SOURCES += \
     #actions.cpp \
     dowork.cpp \
@@ -33,5 +44,6 @@ FORMS += \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:rpi: target.path = /home/pi/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target

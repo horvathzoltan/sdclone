@@ -4,8 +4,6 @@
 #include "mainwindow.h"
 #include "mainpresenter.h"
 
-// gitteszt 1
-
 auto main(int argc, char *argv[]) -> int
 {   
     QApplication a(argc, argv);
