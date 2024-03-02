@@ -16,6 +16,14 @@ public:
     struct DoWorkRModel{
         QString txt;
     };
+
+    struct StringModel{
+        QString txt;
+    };
+
+    struct StringListModel{
+        QStringList txts;
+    };
 };
 
 

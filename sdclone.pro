@@ -21,7 +21,14 @@ unix:rpi:
 
 SOURCES += \
     #actions.cpp \
+    bi/devicestorage.cpp \
+    bi/imagestorage.cpp \
     dowork.cpp \
+    helpers/blockdevicehelper.cpp \
+    helpers/filehelper.cpp \
+    helpers/filenamehelper.cpp \
+    helpers/mounthelper.cpp \
+    helpers/processhelper.cpp \
     main.cpp \
     mainpresenter.cpp \
     mainwindow.cpp
@@ -30,8 +37,15 @@ SOURCES += \
 
 HEADERS += \
     #actions.h \
+    bi/devicestorage.h \
+    bi/imagestorage.h \
     dowork.h \
     global.h \
+    helpers/blockdevicehelper.h \
+    helpers/filehelper.h \
+    helpers/filenamehelper.h \
+    helpers/mounthelper.h \
+    helpers/processhelper.h \
     imainview.h \
     mainpresenter.h \
     mainviewmodel.h \

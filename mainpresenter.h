@@ -6,6 +6,8 @@
 
 #include <QList>
 #include <QObject>
+#include <bi/devicestorage.h>
+#include <bi/imagestorage.h>
 #include "imainview.h"
 
 class IMainView;
@@ -21,7 +23,10 @@ public:
 private:
     QList<IMainView*> _views;
 
-    void refreshView(IMainView *w) const;
+    ImageStorage _imageStorage;
+    DeviceStorage _deviceStorage;
+
+    void refreshView(IMainView *w);
 
 
 private slots:
