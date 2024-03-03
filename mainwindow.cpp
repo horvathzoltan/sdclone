@@ -14,10 +14,19 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::set_DoWorkRModel(const MainViewModel::DoWorkRModel& m)
-{
-    ui->label->setText(m.txt);
-}
+// void MainWindow::set_DoWorkRModel(const MainViewModel::DoWorkRModel& m)
+// {
+//     ui->label->setText(m.txt);
+// }
+
+// auto MainWindow::get_DoWorkModel() -> MainViewModel::DoWorkModel
+// {
+//     auto t = ui->label->text();
+//     bool isok;
+//     int i = t.toInt(&isok, 10);
+//     if(!isok) return {-1};
+//     return {i};
+// };
 
 void MainWindow::set_StatusLine(const MainViewModel::StringModel &m)
 {
@@ -39,26 +48,84 @@ void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
     }
 }
 
-void MainWindow::set_DeviceList(const MainViewModel::StringListModel &m)
-{
-    ui->listWidget_devices->clear();
-    if(!m.txts.isEmpty()){
-        ui->listWidget_devices->addItems(m.txts);
+void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
+{    
+    // ui->listWidget_devices->clear();
+    // for(auto&a:_deviceListItems) delete a;
+    // _deviceListItems.clear();
+
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->takeItem(row);
+        QWidget *w = ui->listWidget_devices->itemWidget(item);
+
+        ui->listWidget_devices->removeItemWidget(item);
+
+        delete w;
+        delete item;
     }
+
+    for(auto&device:m.devices){
+        //ui->listWidget_devices->addItems(m.txts);
+        QSize s = ui->listWidget_devices->size();
+
+        QWidget *w = CreateDeviceListItemWidget(device, s);
+        QListWidgetItem *item = new QListWidgetItem();
+
+        item->setSizeHint(QSize(w->width(),w->height()));
+        //_deviceListItems.append(item);
+        ui->listWidget_devices->addItem(item);
+        ui->listWidget_devices->setItemWidget(item, w);
+    }
+
 }
 
-auto MainWindow::get_DoWorkModel() -> MainViewModel::DoWorkModel
+QWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel& device, const QSize& s)
 {
-    auto t = ui->label->text();
-    bool isok;
-    int i = t.toInt(&isok, 10);
-    if(!isok) return {-1};
-    return {i};
-};
+    int width = s.width()-8;
+    int height = 80;
+    int l1_width = s.width()/2;
+    int l2_width = s.width()-l1_width;
 
-void MainWindow::on_pushButton_clicked()
+    QHBoxLayout *lay= new QHBoxLayout();
+    lay->setGeometry(QRect(0, 0, width, height));
+    lay->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+
+    QLabel *l1 = new QLabel();
+    l1->setGeometry(QRect(0, 0, l1_width, height));
+    l1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    l1->setAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
+    QFont f1 = l1->font();
+    f1.setPointSize(10);
+    l1->setFont(f1);
+
+    l1->setText(device.deviceLabel);
+
+    QLabel *l2 = new QLabel();
+    l2->setGeometry(QRect(0, 0, l2_width, height));
+    l2->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+    QFont f2 = l2->font();
+    f2.setPointSize(6);
+    l2->setFont(f2);
+
+
+    QString txt = device.partitionLabels.join('\n');
+    l2->setText(txt);
+
+    lay->addWidget(l1);
+    lay->addWidget(l2);
+
+    QWidget * w = new QWidget();
+    w->setLayout( lay );
+
+    w->setGeometry(QRect(0, 0, width, height));
+
+    return w;
+}
+
+void MainWindow::on_pushButton_read_clicked()
 {
     qDebug() << "PushButtonActionTriggered";
-    emit PushButtonActionTriggered(this);
+    emit ReadActionTriggered(this);
 }
 

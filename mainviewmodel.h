@@ -24,6 +24,15 @@ public:
     struct StringListModel{
         QStringList txts;
     };
+
+    struct DeviceModel{
+        QString deviceLabel;
+        QStringList partitionLabels;
+    };
+
+    struct DeviceListModel{
+        QList<DeviceModel> devices;
+    };
 };
 
 

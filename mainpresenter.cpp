@@ -1,6 +1,6 @@
 #include "mainpresenter.h"
 #include "mainviewmodel.h"
-#include "dowork.h"
+//#include "dowork.h"
 
 #include <QFileDialog>
 #include <QDateTime>
@@ -26,14 +26,19 @@ void MainPresenter::appendView(IMainView *w)
 
     auto *view_obj = dynamic_cast<QObject*>(w);
 
-    QObject::connect(view_obj, SIGNAL(PushButtonActionTriggered(IMainView *)),
-                     this, SLOT(processPushButtonAction(IMainView *)));
+    QObject::connect(view_obj, SIGNAL(ReadActionTriggered(IMainView *)),
+                     this, SLOT(processReadAction(IMainView *)));
 
     refreshView(w);
 }
 
 void MainPresenter::refreshView(IMainView *w)
-{
+{    
+}
+
+void MainPresenter::initView(IMainView *w) {
+//    MainViewModel::DoWorkRModel rm{"1"};
+//    w->set_DoWorkRModel(rm);
 
     QString partLabel = "butyok2";
 
@@ -43,8 +48,9 @@ void MainPresenter::refreshView(IMainView *w)
     case ImageStorage::OK:
     {
         w->set_StatusLine({"mounted:"+partLabel+" to:"+_imageStorage.mountPoint()});
-        w->set_StorageLabel({partLabel+": "+_imageStorage.mountPoint()});
         QString imageFolder = "clone";
+        w->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
+
         QStringList e = _imageStorage.GetImageFilePaths(imageFolder);
         if(e.isEmpty()){
             w->set_StatusLine({"images not found:"+imageFolder});
@@ -66,29 +72,37 @@ void MainPresenter::refreshView(IMainView *w)
     }
 
     _deviceStorage.Init();
-    auto devices = _deviceStorage.devices();
+    QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
     if(devices.isEmpty()){
         w->set_StatusLine({"usb devices not found"});
     } else{
-        QStringList deviceList;
-        for(auto&a:devices){
-            QString txt = a.toString();
-            deviceList.append(txt);
-        }
-        w->set_DeviceList({deviceList});
+        MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices);
+        w->set_DeviceList(deviceListWm);
     }
-}
-
-void MainPresenter::initView(IMainView *w) const {
-    MainViewModel::DoWorkRModel rm{"1"};
-    w->set_DoWorkRModel(rm);
-
 };
 
-void MainPresenter::processPushButtonAction(IMainView *sender){
-    qDebug() << "processPushButtonAction";
-    auto m = sender->get_DoWorkModel();
-    auto rm = DoWork::Work1(m);
-    sender->set_DoWorkRModel(rm);
+MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<DeviceStorage::DeviceModel> &devices)
+{
+    MainViewModel::DeviceListModel m;
+
+    for(auto&device:devices){
+        MainViewModel::DeviceModel d;
+
+        d.deviceLabel = device.usbPath;
+        for(auto&p:device.partitions){
+            d.partitionLabels.append(p.toString());
+        }
+        m.devices.append(d);
+    }
+    return m;
+}
+ void MainPresenter::processReadAction(IMainView *sender){
+     qDebug() << "processReadAction";
+     sender->set_StatusLine({"processReadAction"});
+
+     //sender->get
+//     auto m = sender->get_DoWorkModel();
+//     auto rm = DoWork::Work1(m);
+//     sender->set_DoWorkRModel(rm);
 }
 

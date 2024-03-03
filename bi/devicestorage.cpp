@@ -53,12 +53,13 @@ DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
 
 QString DeviceStorage::DeviceModel::toString()
 {
-    QString txt =  usbPath;
+    QString txt = usbPath;
     QString ptxt;
     for(auto&a:partitions){
         if(!ptxt.isEmpty())ptxt+=":";
         ptxt+=a.toString();
     }
+    if(!ptxt.isEmpty()) txt+=":"+ptxt;
     return txt;
 }
 
@@ -71,21 +72,25 @@ DeviceStorage::PartitionModel DeviceStorage::PartitionModel::Parse(const QString
         .partPath=words[0],
         .label=words[1]
     };
-    if(words.count()>=3) p.project=words[3];
-    if(words.count()>=4) p.bin=words[4];
+    if(words.count()>=3) p.project=words[2];
+    if(words.count()>=4) p.bin=words[3];
     return p;
 }
 
-QString DeviceStorage::PartitionModel::toString()
+QString DeviceStorage::PartitionModel::toString() const
 {
     QString txt;
     if(!bin.isEmpty()){
-        txt+=":"+bin;
+        txt=bin;
     } else{
         if(!project.isEmpty()){
-            txt+=":"+project;
+            txt=project;
         } else{
-            txt+=":"+label;
+            if(!label.isEmpty()){
+                txt=label;
+            } else{
+                txt=partPath;
+            }
         }
     }
     return txt;

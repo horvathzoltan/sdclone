@@ -15,7 +15,7 @@ public:
 
         static PartitionModel Parse(const QString& txt);
 
-        QString toString();
+        QString toString() const;
     };
     struct DeviceModel{
         QString devPath;

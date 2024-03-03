@@ -43,7 +43,8 @@ QString MountHelper::MkMountPoint(const QString& mountdir)
 
 QString MountHelper::GetMountPoint(const QString &dev)
 {
-    QString cmd = QStringLiteral(R"(df -l --output=target %1)").arg(dev);
+    //QString cmd = QStringLiteral(R"(df -l --output=target %1)").arg(dev);
+    QString cmd = QStringLiteral(R"(findmnt -r --output=target %1)").arg(dev);
     auto out = ProcessHelper::ShellExecute(cmd);
 
     if(out.exitCode!=0) return {};

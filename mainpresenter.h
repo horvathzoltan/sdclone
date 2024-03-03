@@ -19,7 +19,7 @@ class MainPresenter : public QObject
 public:
     explicit MainPresenter(QObject *parent = nullptr);
     void appendView(IMainView *w);
-    void initView(IMainView *w) const;
+    void initView(IMainView *w);
 private:
     QList<IMainView*> _views;
 
@@ -28,9 +28,9 @@ private:
 
     void refreshView(IMainView *w);
 
-
+    static MainViewModel::DeviceListModel DeviceModelToWm(const QList<DeviceStorage::DeviceModel>& devices);
 private slots:
-    void processPushButtonAction(IMainView *sender);
+    void processReadAction(IMainView *sender);
 };
 
 #endif // MAINPRESENTER_H
