@@ -23,6 +23,7 @@ SOURCES += \
     #actions.cpp \
     bi/devicestorage.cpp \
     bi/imagestorage.cpp \
+    devicewidget.cpp \
     dowork.cpp \
     helpers/blockdevicehelper.cpp \
     helpers/filehelper.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     #actions.h \
     bi/devicestorage.h \
     bi/imagestorage.h \
+    devicewidget.h \
     dowork.h \
     global.h \
     helpers/blockdevicehelper.h \

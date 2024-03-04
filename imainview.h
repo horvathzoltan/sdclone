@@ -18,6 +18,8 @@ public:
     virtual void set_ImageFileList(const MainViewModel::StringListModel& m) = 0;
     virtual void set_DeviceList(const MainViewModel::DeviceListModel& m) = 0;
 
+    virtual MainViewModel::DeviceModel get_Device() = 0;
+
 public: // signals
     virtual void ReadActionTriggered(IMainView *sender) = 0;
 };

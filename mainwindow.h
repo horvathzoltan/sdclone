@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "devicewidget.h"
 #include "imainview.h"
 #include "qlistwidget.h"
 
@@ -21,11 +22,13 @@ private:
     void set_StorageLabel(const MainViewModel::StringModel& m);
     void set_ImageFileList(const MainViewModel::StringListModel& m);
     void set_DeviceList(const MainViewModel::DeviceListModel& m);
+    MainViewModel::DeviceModel get_Device();
+
     QList<QListWidgetItem*> _deviceListItems;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    QWidget* CreateDeviceListItemWidget(const MainViewModel::DeviceModel &txt, const QSize &s);
+    DeviceWidget* CreateDeviceListItemWidget(const MainViewModel::DeviceModel &txt, const QSize &s);
 signals:
     void ReadActionTriggered(IMainView *sender);
 private slots:    

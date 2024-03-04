@@ -19,8 +19,10 @@ private:
     QString _devPath;
     Error _err;
     QStringList _imageFilePaths;
+    QString _imageFolder;
 public:
     QString devPath(){return _devPath;}
+    QString imageFolder(){return _imageFolder;}
     bool isMounted(){ return !_mountPoint.isEmpty();}
     Error err(){return _err;}
     QStringList imageFilePaths(){return _imageFilePaths;}
@@ -30,7 +32,8 @@ public:
         return FileNameHelper::Combine(_mountPoint, dir);
     }
 
-    QStringList GetImageFilePaths(const QString& imageFolder);
+    void SetImageFilePath(const QString& imageFolder);
+    QStringList GetImageFilePaths();
 };
 
 #endif // IMAGESTORAGE_H

@@ -27,6 +27,8 @@ public:
 
     struct DeviceModel{
         QString deviceLabel;
+        QString usbDevicePath;
+        QString outputFileName;
         QStringList partitionLabels;
     };
 

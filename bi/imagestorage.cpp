@@ -29,10 +29,14 @@ void ImageStorage::Init(const QString& partLabel){
     }
 }
 
-QStringList ImageStorage::GetImageFilePaths(const QString& imageFolder){
-    QString imageFolderName = GetFolder(imageFolder);
-    if(imageFolderName.isEmpty()) return {};
-    QStringList imageFilePaths = FileHelper::GetFiles(imageFolderName, {"*.img"});
+void ImageStorage::SetImageFilePath(const QString& imageFolder){
+    _imageFolder = GetFolder(imageFolder);
+}
+
+QStringList ImageStorage::GetImageFilePaths(){
+
+    if(_imageFolder.isEmpty()) return {};
+    QStringList imageFilePaths = FileHelper::GetFiles(_imageFolder, {"*.img"});
     return imageFilePaths;
 }
 

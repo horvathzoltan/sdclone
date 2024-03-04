@@ -51,7 +51,8 @@ void MainPresenter::initView(IMainView *w) {
         QString imageFolder = "clone";
         w->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
 
-        QStringList e = _imageStorage.GetImageFilePaths(imageFolder);
+        _imageStorage.SetImageFilePath(imageFolder);
+        QStringList e = _imageStorage.GetImageFilePaths();
         if(e.isEmpty()){
             w->set_StatusLine({"images not found:"+imageFolder});
         } else{
@@ -89,9 +90,20 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
         MainViewModel::DeviceModel d;
 
         d.deviceLabel = device.usbPath;
+        d.usbDevicePath = device.usbPath;
+        QString o;
         for(auto&p:device.partitions){
             d.partitionLabels.append(p.toString());
+            if(o.isEmpty()){
+                if(!p.project.isEmpty()){
+                    o = p.project;
+                } else{
+                    o = p.label;
+                }
+            }
         }
+        d.outputFileName = o;
+
         m.devices.append(d);
     }
     return m;
@@ -100,9 +112,17 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
      qDebug() << "processReadAction";
      sender->set_StatusLine({"processReadAction"});
 
-     //sender->get
-//     auto m = sender->get_DoWorkModel();
-//     auto rm = DoWork::Work1(m);
-//     sender->set_DoWorkRModel(rm);
+     MainViewModel::DeviceModel a = sender->get_Device();
+
+     sender->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
+     QDateTime now = QDateTime::currentDateTime();
+     QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
+     QString o = a.outputFileName+"_"+timestamp;
+     sender->set_StatusLine({"outputFileName:"+o});
+     sender->set_StatusLine({"path:"+_imageStorage.imageFolder()});
+     //     auto m = sender->get_DoWorkModel();
+     //     auto rm = DoWork::Work1(m);
+     //     sender->set_DoWorkRModel(rm);
 }
+
 

@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "QDebug"
+#include "devicewidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -68,7 +69,7 @@ void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
         //ui->listWidget_devices->addItems(m.txts);
         QSize s = ui->listWidget_devices->size();
 
-        QWidget *w = CreateDeviceListItemWidget(device, s);
+        DeviceWidget *w = CreateDeviceListItemWidget(device, s);
         QListWidgetItem *item = new QListWidgetItem();
 
         item->setSizeHint(QSize(w->width(),w->height()));
@@ -79,7 +80,23 @@ void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
 
 }
 
-QWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel& device, const QSize& s)
+MainViewModel::DeviceModel MainWindow::get_Device()
+{
+    MainViewModel::DeviceModel d;
+    QList<QListWidgetItem *> selectedItems = ui->listWidget_devices->selectedItems();
+    if(!selectedItems.isEmpty()){
+        QListWidgetItem *item = selectedItems[0];
+        QWidget *a = ui->listWidget_devices->itemWidget(item);
+        DeviceWidget *w = static_cast<DeviceWidget*>(a);
+        if(w){
+            d.usbDevicePath = w->_usbDevicePath;
+            d.outputFileName = w->_outputFileName;
+        }
+    }
+    return d;
+}
+
+DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel& device, const QSize& s)
 {
     int width = s.width()-8;
     int height = 80;
@@ -115,7 +132,10 @@ QWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel
     lay->addWidget(l1);
     lay->addWidget(l2);
 
-    QWidget * w = new QWidget();
+    DeviceWidget* w = new DeviceWidget();
+
+    w->_usbDevicePath = device.usbDevicePath;
+    w->_outputFileName = device.outputFileName;
     w->setLayout( lay );
 
     w->setGeometry(QRect(0, 0, width, height));
