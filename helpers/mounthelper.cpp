@@ -1,16 +1,14 @@
 #include "mounthelper.h"
 #include "processhelper.h"
 
-// bool MountHelper::isMounted(const QString& localPath){
-//     return !GetMountPoint(localPath).isEmpty();
-// }
+extern ProcessHelper _processHelper;
 
 bool MountHelper::Mount(const QString& devpath, const QString& mountpath){
     if(devpath.isEmpty()) return false;
     if(mountpath.isEmpty()) return false;
 
     QString cmd = QStringLiteral(R"(mount %1 %3)").arg(devpath,mountpath);
-    auto out = ProcessHelper::ShellExecuteSudo(cmd);
+    auto out = _processHelper.ShellExecuteSudo(cmd);
 
     if(out.exitCode) return false;
     if(!out.stdErr.isEmpty()) return false;
@@ -21,7 +19,7 @@ bool MountHelper::Mount(const QString& devpath, const QString& mountpath){
 bool MountHelper::UMount(const QString& mountpath){
     if(mountpath.isEmpty()) return false;
     QString cmd = QStringLiteral(R"(umount %1)").arg(mountpath);
-    auto out = ProcessHelper::ShellExecuteSudo(cmd);
+    auto out = _processHelper.ShellExecuteSudo(cmd);
 
     if(out.exitCode) return false;
     if(!out.stdErr.isEmpty()) return false;
@@ -36,7 +34,7 @@ QString MountHelper::MkMountPoint(const QString& mountdir)
 
     QString cmd = QStringLiteral("mkdir -p %1").arg(mountPoint);
 
-    ProcessHelper::ShellExecuteSudo(cmd);
+    _processHelper.ShellExecuteSudo(cmd);
 
     return mountPoint;
 }
@@ -45,7 +43,7 @@ QString MountHelper::GetMountPoint(const QString &dev)
 {
     //QString cmd = QStringLiteral(R"(df -l --output=target %1)").arg(dev);
     QString cmd = QStringLiteral(R"(findmnt -r --output=target %1)").arg(dev);
-    auto out = ProcessHelper::ShellExecute(cmd);
+    auto out = _processHelper.ShellExecute(cmd);
 
     if(out.exitCode!=0) return {};
     if(out.stdOut.isEmpty()) return {};

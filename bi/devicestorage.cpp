@@ -2,13 +2,15 @@
 
 #include <helpers/processhelper.h>
 
+extern ProcessHelper _processHelper;
+
 DeviceStorage::DeviceStorage() {}
 
 void DeviceStorage::Init()
 {
     _devices.clear();
     QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -q -s Aladar123");
-    auto out = ProcessHelper::ShellExecute(cmd);
+    auto out = _processHelper.ShellExecute(cmd);
 
     if(out.exitCode!=0) return;
     if(out.stdOut.isEmpty()) return;

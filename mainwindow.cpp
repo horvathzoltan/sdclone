@@ -33,7 +33,8 @@ void MainWindow::set_StatusLine(const MainViewModel::StringModel &m)
 {
     static QString a;
     a+=m.txt+'\n';
-    ui->label_stateline->setText(a);
+    ui->plainTextEdit_status->setPlainText(a);
+    ui->plainTextEdit_status->moveCursor(QTextCursor::End);
 }
 
 void MainWindow::set_StorageLabel(const MainViewModel::StringModel &m)

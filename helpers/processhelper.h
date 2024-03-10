@@ -1,15 +1,23 @@
 #ifndef PROCESSHELPER_H
 #define PROCESSHELPER_H
 
+#include "qobjectdefs.h"
+#include <QObject>
+#include <QProcess>
 #include <QStringList>
 
-class ProcessHelper
+class ProcessHelper : public QObject
 {
+    Q_OBJECT
+
 private:
-    static bool _verbose;
+    bool _verbose = false;
+    bool _writeErr = true;
+
     static const QString SEPARATOR;
-    static QString _password;
+    QString _password="";
 public:
+     explicit ProcessHelper(QObject *parent = nullptr);
     struct Output{
         QString stdOut;
         QString stdErr;
@@ -26,11 +34,21 @@ public:
         }
     };
 
-    static void setVerbose(bool v){_verbose = v;}
+    void setVerbose(bool v){_verbose = v;}
+    void setWriteErr(bool v){_writeErr = v;}
 
-    static Output ShellExecute(const QString& cmd, int timeout_millis = -1);
-    static void SetPassword(const QString& v){_password=v;}
-    static Output ShellExecuteSudo(const QString& cmd, int timeout_millis = -1);
+
+    Output ShellExecute(const QString& cmd, int timeout_millis = -1);
+    Output ShellExecuteNoWait(const QString& cmd, int timeout_millis = -1);
+
+    void SetPassword(const QString& v){_password=v;}
+    Output ShellExecuteSudo(const QString& cmd, int timeout_millis = -1);
+    Output ShellExecuteSudoNoWait(const QString& cmd, int timeout_millis = -1);
+
+    QProcess _pd;
+
+signals:
+    void stdErrR(QByteArray&d);
 };
 
 #endif // PROCESSHELPER_H

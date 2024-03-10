@@ -1,10 +1,12 @@
 #include "blockdevicehelper.h"
 #include "processhelper.h"
 
+extern ProcessHelper _processHelper;
+
 QString BlockDeviceHelper::GetByLabel(const QString &label)
 {
     QString cmd = QStringLiteral(R"(lsblk -ro path,type,label)");
-    auto out = ProcessHelper::ShellExecute(cmd);
+    auto out = _processHelper.ShellExecute(cmd);
 
     if(out.exitCode!=0) return {};
     if(out.stdOut.isEmpty()) return {};

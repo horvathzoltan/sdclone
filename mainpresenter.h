@@ -4,6 +4,7 @@
 //#include "actions.h"
 //#include "updates.h"
 
+#include <QElapsedTimer>
 #include <QList>
 #include <QObject>
 #include <bi/devicestorage.h>
@@ -17,6 +18,7 @@ class MainPresenter : public QObject
     Q_OBJECT
 
 public:
+    QElapsedTimer _t;
     explicit MainPresenter(QObject *parent = nullptr);
     void appendView(IMainView *w);
     void initView(IMainView *w);
@@ -29,8 +31,12 @@ private:
     void refreshView(IMainView *w);
 
     static MainViewModel::DeviceListModel DeviceModelToWm(const QList<DeviceStorage::DeviceModel>& devices);
+
+
 private slots:
     void processReadAction(IMainView *sender);
+public slots:
+    void stdErrReader(QByteArray&d);
 };
 
 #endif // MAINPRESENTER_H

@@ -9,10 +9,15 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QDebug>
+#include <QElapsedTimer>
 
 
 
 #include <bi/imagestorage.h>
+
+#include <helpers/processhelper.h>
+
+extern ProcessHelper _processHelper;
 
 MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
 {
@@ -26,8 +31,11 @@ void MainPresenter::appendView(IMainView *w)
 
     auto *view_obj = dynamic_cast<QObject*>(w);
 
-    QObject::connect(view_obj, SIGNAL(ReadActionTriggered(IMainView *)),
-                     this, SLOT(processReadAction(IMainView *)));
+    QObject::connect(view_obj, SIGNAL(ReadActionTriggered(IMainView*)),
+                     this, SLOT(processReadAction(IMainView*)));
+
+    QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
+                     this, &MainPresenter::stdErrReader);
 
     refreshView(w);
 }
@@ -119,10 +127,40 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
      QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
      QString o = a.outputFileName+"_"+timestamp;
      sender->set_StatusLine({"outputFileName:"+o});
-     sender->set_StatusLine({"path:"+_imageStorage.imageFolder()});
+     //sender->set_StatusLine({"path:"+_imageStorage.imageFolder()});
      //     auto m = sender->get_DoWorkModel();
      //     auto rm = DoWork::Work1(m);
-     //     sender->set_DoWorkRModel(rm);
-}
+     //     sender->set_DoWorkRModel(rm);    
+
+     QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %3 -s Aladar123 -f -u %2")
+                        .arg(_imageStorage.imageFolder()).arg(a.usbDevicePath).arg(o);
+
+     _t.start();
+
+     _processHelper.ShellExecuteSudoNoWait(cmd);
+ }
+
+
+ void MainPresenter::stdErrReader(QByteArray&d)
+ {
+     static QByteArray b;
+     b.append(d);
+     if(_t.elapsed()>1000){
+         QList<QByteArray> a = b.split('\n');
+         QString g;
+         for(int i=a.count()-1;i>=0;i--){
+             g = a[i].trimmed();
+             if(!g.isEmpty()){
+                 break;
+             }
+         }
+         _t.restart();
+         b.clear();
+         if(!g.isEmpty()){
+            _views[0]->set_StatusLine({g});
+         }
+
+     }
+ }
 
 
