@@ -49,6 +49,7 @@ public:
 
 signals:
     void stdErrR(QByteArray&d);
+    void finished();
 };
 
 #endif // PROCESSHELPER_H

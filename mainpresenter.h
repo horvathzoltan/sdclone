@@ -32,11 +32,13 @@ private:
 
     static MainViewModel::DeviceListModel DeviceModelToWm(const QList<DeviceStorage::DeviceModel>& devices);
 
+    static bool _isprocessReadAction;
 
 private slots:
     void processReadAction(IMainView *sender);
 public slots:
     void stdErrReader(QByteArray&d);
+    void finished();
 };
 
 #endif // MAINPRESENTER_H

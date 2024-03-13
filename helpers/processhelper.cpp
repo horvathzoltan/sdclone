@@ -144,8 +144,20 @@ ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int 
         emit this->stdErrR(d2);
     };
 
+    auto finishedR2 = [this](int exitCode, QProcess::ExitStatus exitStatus)
+    {
+        ProcessHelper::Output o;
+        //o.elapsedMillis = t.elapsed();
+        o.stdOut  = _pd.readAllStandardOutput();
+        o.stdErr = _pd.readAllStandardError();
+        o.exitCode = _pd.exitCode();
+
+        emit this->finished();
+    };
+
     //p->setReadChannel(QProcess::StandardError);
     QObject::connect(&_pd, &QProcess::readyReadStandardError,readyR2);
+    QObject::connect(&_pd, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),finishedR2);
 
     //process.start("/bin/sh", {"-c", cmd});
 

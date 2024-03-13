@@ -19,6 +19,8 @@
 
 extern ProcessHelper _processHelper;
 
+bool MainPresenter::_isprocessReadAction = false;
+
 MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
 {
 
@@ -34,14 +36,15 @@ void MainPresenter::appendView(IMainView *w)
     QObject::connect(view_obj, SIGNAL(ReadActionTriggered(IMainView*)),
                      this, SLOT(processReadAction(IMainView*)));
 
-    QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
-                     this, &MainPresenter::stdErrReader);
+    // QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
+    //                  this, &MainPresenter::stdErrReader);
 
     refreshView(w);
 }
 
 void MainPresenter::refreshView(IMainView *w)
-{    
+{
+    Q_UNUSED(w)
 }
 
 void MainPresenter::initView(IMainView *w) {
@@ -116,51 +119,72 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
     }
     return m;
 }
- void MainPresenter::processReadAction(IMainView *sender){
-     qDebug() << "processReadAction";
-     sender->set_StatusLine({"processReadAction"});
 
-     MainViewModel::DeviceModel a = sender->get_Device();
+void MainPresenter::processReadAction(IMainView *sender)
+{
+    if(!_isprocessReadAction){
+        _isprocessReadAction = true;
+        qDebug() << "processReadAction";
+        sender->set_StatusLine({"processReadAction"});
 
-     sender->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
-     QDateTime now = QDateTime::currentDateTime();
-     QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
-     QString o = a.outputFileName+"_"+timestamp;
-     sender->set_StatusLine({"outputFileName:"+o});
-     //sender->set_StatusLine({"path:"+_imageStorage.imageFolder()});
-     //     auto m = sender->get_DoWorkModel();
-     //     auto rm = DoWork::Work1(m);
-     //     sender->set_DoWorkRModel(rm);    
+        MainViewModel::DeviceModel a = sender->get_Device();
 
-     QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %3 -s Aladar123 -f -u %2")
+        sender->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
+        QDateTime now = QDateTime::currentDateTime();
+        QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
+        QString o = a.outputFileName+"_"+timestamp;
+        sender->set_StatusLine({"outputFileName:"+o});
+
+        QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %3 -s Aladar123 -f -u %2")
                         .arg(_imageStorage.imageFolder()).arg(a.usbDevicePath).arg(o);
 
-     _t.start();
+        qDebug()<<"cmd:"+cmd;
+        _t.start();
 
-     _processHelper.ShellExecuteSudoNoWait(cmd);
- }
+        QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
+                       this, &MainPresenter::stdErrReader);
+        QObject::connect(&_processHelper, &ProcessHelper::finished,
+                          this, &MainPresenter::finished);
+
+        _processHelper.ShellExecuteSudoNoWait(cmd);
+    }
+}
 
 
- void MainPresenter::stdErrReader(QByteArray&d)
- {
-     static QByteArray b;
-     b.append(d);
-     if(_t.elapsed()>1000){
-         QList<QByteArray> a = b.split('\n');
-         QString g;
-         for(int i=a.count()-1;i>=0;i--){
-             g = a[i].trimmed();
-             if(!g.isEmpty()){
-                 break;
-             }
-         }
-         _t.restart();
-         b.clear();
-         if(!g.isEmpty()){
-            _views[0]->set_StatusLine({g});
-         }
+void MainPresenter::stdErrReader(QByteArray&d)
+{
+    static QByteArray b;
+    b.append(d);
+    // ha "B/s" van a végén, a dd küldött statsot
 
-     }
- }
+    //if(_t.elapsed()>1000){
+    // QList<QByteArray> a = b.split('\n');
+    // QString g;
+    // for(int i=a.count()-1;i>=0;i--){
+    //     g = a[i].trimmed();
+    //     if(!g.isEmpty()){
+    //         break;
+    //     }
+    // }
+    QString g(b);
+    _t.restart();
+    b.clear();
+    if(!g.trimmed().isEmpty()){
+        _views[0]->set_StatusLine({g});
+    }
 
+    //}
+}
+
+
+void MainPresenter::finished()
+{
+    QObject::disconnect(&_processHelper, &ProcessHelper::stdErrR,
+                     this, &MainPresenter::stdErrReader);
+    QObject::disconnect(&_processHelper, &ProcessHelper::finished,
+                     this, &MainPresenter::finished);
+
+    _isprocessReadAction = false;
+    _views[0]->set_StatusLine({"finished"});
+}
 
