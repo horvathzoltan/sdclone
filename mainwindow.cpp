@@ -31,9 +31,20 @@ MainWindow::~MainWindow()
 
 void MainWindow::set_StatusLine(const MainViewModel::StringModel &m)
 {
-    static QString a;
-    a+=m.txt+'\n';
-    ui->plainTextEdit_status->setPlainText(a);
+    static QStringList a;
+
+    QStringList lines = m.txt.split('\n');
+    for(auto&line:lines){
+
+        if(line.startsWith('\r')){
+            a.removeLast();
+        }
+        auto l = line.remove('\r').remove('\n');
+        if(!l.isEmpty()){
+            a.append(l);
+        }
+    }
+    ui->plainTextEdit_status->setPlainText(a.join('\n'));
     ui->plainTextEdit_status->moveCursor(QTextCursor::End);
 }
 
@@ -78,7 +89,11 @@ void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
         ui->listWidget_devices->addItem(item);
         ui->listWidget_devices->setItemWidget(item, w);
     }
+}
 
+void MainWindow::set_DeviceListClear()
+{
+    ui->listWidget_devices->clear();
 }
 
 MainViewModel::DeviceModel MainWindow::get_Device()
@@ -146,7 +161,21 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
 
 void MainWindow::on_pushButton_read_clicked()
 {
-    qDebug() << "PushButtonActionTriggered";
     emit ReadActionTriggered(this);
 }
 
+
+void MainWindow::on_pushButton_write_clicked()
+{
+    emit WriteActionTriggered(this);
+}
+
+MainViewModel::StringModel MainWindow::get_InputFileName()
+{
+    MainViewModel::StringModel m;
+    QListWidgetItem *item = ui->listWidget_images->selectedItems().first();
+    if(item){
+        m.txt = item->text();
+    }
+    return m;
+}

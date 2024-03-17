@@ -19,11 +19,13 @@
 
 extern ProcessHelper _processHelper;
 
-bool MainPresenter::_isprocessReadAction = false;
-
 MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
 {
-
+    connect(&_devicePollTimer, &QTimer::timeout, this, [this](){
+        if(!_isprocessWriteAction && !_isprocessReadAction){
+            deviceStorageRefresh();
+        }
+    });
 }
 
 void MainPresenter::appendView(IMainView *w)
@@ -36,8 +38,8 @@ void MainPresenter::appendView(IMainView *w)
     QObject::connect(view_obj, SIGNAL(ReadActionTriggered(IMainView*)),
                      this, SLOT(processReadAction(IMainView*)));
 
-    // QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
-    //                  this, &MainPresenter::stdErrReader);
+    QObject::connect(view_obj, SIGNAL(WriteActionTriggered(IMainView*)),
+                     this, SLOT(processWriteAction(IMainView*)));
 
     refreshView(w);
 }
@@ -83,15 +85,27 @@ void MainPresenter::initView(IMainView *w) {
         break;
     }
 
+    deviceStorageRefresh();
+    //_devicePollTimer.start(5000);
+};
+
+void MainPresenter::deviceStorageRefresh()
+{
     _deviceStorage.Init();
     QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
+    // itt kell a disk uuid
+    // ami nincs benne a listboxban, és most van, azt bele kell tenni
+    // ami benne van a listboxban, és most nincs benne azt ki kell venni
+    // mi selected, azt uuid alapján selectelni kell - illetve az elvileg úgy fog magától maradni
+    _views[0]->set_DeviceListClear();
     if(devices.isEmpty()){
-        w->set_StatusLine({"usb devices not found"});
+        _views[0]->set_StatusLine({"usb devices not found"});
     } else{
         MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices);
-        w->set_DeviceList(deviceListWm);
+        _views[0]->set_DeviceList(deviceListWm);
     }
-};
+}
+
 
 MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<DeviceStorage::DeviceModel> &devices)
 {
@@ -120,9 +134,13 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
     return m;
 }
 
+
+
+/*READ*/
+
 void MainPresenter::processReadAction(IMainView *sender)
 {
-    if(!_isprocessReadAction){
+    if(!_isprocessReadAction && !_isprocessWriteAction){
         _isprocessReadAction = true;
         qDebug() << "processReadAction";
         sender->set_StatusLine({"processReadAction"});
@@ -135,8 +153,8 @@ void MainPresenter::processReadAction(IMainView *sender)
         QString o = a.outputFileName+"_"+timestamp;
         sender->set_StatusLine({"outputFileName:"+o});
 
-        QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %3 -s Aladar123 -f -u %2")
-                        .arg(_imageStorage.imageFolder()).arg(a.usbDevicePath).arg(o);
+        QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %2 -s Aladar123 -f -u %3")
+                        .arg(_imageStorage.imageFolder(),o,a.usbDevicePath);
 
         qDebug()<<"cmd:"+cmd;
         _t.start();
@@ -153,27 +171,24 @@ void MainPresenter::processReadAction(IMainView *sender)
 
 void MainPresenter::stdErrReader(QByteArray&d)
 {
-    static QByteArray b;
-    b.append(d);
+    _stdErr.append(d);
     // ha "B/s" van a végén, a dd küldött statsot
 
-    //if(_t.elapsed()>1000){
-    // QList<QByteArray> a = b.split('\n');
-    // QString g;
-    // for(int i=a.count()-1;i>=0;i--){
-    //     g = a[i].trimmed();
-    //     if(!g.isEmpty()){
-    //         break;
-    //     }
-    // }
-    QString g(b);
+    QString g;
     _t.restart();
-    b.clear();
-    if(!g.trimmed().isEmpty()){
-        _views[0]->set_StatusLine({g});
+
+    int ix = _stdErr.lastIndexOf('\n');
+    if(ix!=-1){
+        g = _stdErr.mid(0,ix);
+        _stdErr = _stdErr.mid(ix+1);
+    } else{
+        g = QString(_stdErr);
+        _stdErr.clear();
     }
 
-    //}
+    if(!g.isEmpty()){
+        _views[0]->set_StatusLine({g});
+    }
 }
 
 
@@ -184,7 +199,44 @@ void MainPresenter::finished()
     QObject::disconnect(&_processHelper, &ProcessHelper::finished,
                      this, &MainPresenter::finished);
 
-    _isprocessReadAction = false;
+    if(_isprocessReadAction)
+        _isprocessReadAction = false;
+    if(_isprocessWriteAction)
+        _isprocessWriteAction = false;
+
+    QString g = QString(_stdErr);
+    _stdErr.clear();
+    if(!g.isEmpty()){
+        _views[0]->set_StatusLine({g});
+    }
     _views[0]->set_StatusLine({"finished"});
 }
 
+/*WRITE*/
+//./writesd2 -p /media/pi/butyok2/clone/ -i img57 -s Aladar123 -f -u 1-1.2
+
+void MainPresenter::processWriteAction(IMainView *sender)
+{
+    if(!_isprocessWriteAction && !_isprocessReadAction){
+        _isprocessWriteAction = true;
+        qDebug() << "processWriteAction";
+        sender->set_StatusLine({"processWriteAction"});
+
+        QString usbDevicePath = _deviceStorage.usbRootPath();
+
+        auto m = sender->get_InputFileName();
+
+        QString cmd = QStringLiteral("/home/pi/writesd2/bin/writesd2 -p %1 -i %2 -s Aladar123 -f -u %3")
+                          .arg(_imageStorage.imageFolder(),m.txt,usbDevicePath);
+
+        qDebug()<<"cmd:"+cmd;
+        _t.start();
+
+        QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
+                         this, &MainPresenter::stdErrReader);
+        QObject::connect(&_processHelper, &ProcessHelper::finished,
+                         this, &MainPresenter::finished);
+
+        _processHelper.ShellExecuteSudoNoWait(cmd);
+    }
+}

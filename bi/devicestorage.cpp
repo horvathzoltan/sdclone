@@ -27,6 +27,12 @@ void DeviceStorage::Init()
     }
 }
 
+QString DeviceStorage::usbRootPath()
+{
+    auto device = _devices.first();
+    return device.usbRootPath();
+}
+
 DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
 {
     if(!l.startsWith("usbdrive")) return {};
@@ -63,6 +69,16 @@ QString DeviceStorage::DeviceModel::toString()
     }
     if(!ptxt.isEmpty()) txt+=":"+ptxt;
     return txt;
+}
+
+//1-1.2.4_1.0
+QString DeviceStorage::DeviceModel::usbRootPath()
+{
+    auto a = usbPath.split('_');
+    int ix = a.first().lastIndexOf('.');
+    if(ix==1)return {};
+
+    return a[0].mid(0,ix);
 }
 
 DeviceStorage::PartitionModel DeviceStorage::PartitionModel::Parse(const QString &l)

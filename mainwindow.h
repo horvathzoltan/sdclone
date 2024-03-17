@@ -22,7 +22,10 @@ private:
     void set_StorageLabel(const MainViewModel::StringModel& m);
     void set_ImageFileList(const MainViewModel::StringListModel& m);
     void set_DeviceList(const MainViewModel::DeviceListModel& m);
+    void set_DeviceListClear();
+
     MainViewModel::DeviceModel get_Device();
+    MainViewModel::StringModel get_InputFileName();
 
     QList<QListWidgetItem*> _deviceListItems;
 public:
@@ -31,7 +34,9 @@ public:
     DeviceWidget* CreateDeviceListItemWidget(const MainViewModel::DeviceModel &txt, const QSize &s);
 signals:
     void ReadActionTriggered(IMainView *sender);
+    void WriteActionTriggered(IMainView *sender);
 private slots:    
     void on_pushButton_read_clicked();
+    void on_pushButton_write_clicked();
 };
 #endif // MAINWINDOW_H

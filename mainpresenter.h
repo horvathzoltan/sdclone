@@ -7,6 +7,7 @@
 #include <QElapsedTimer>
 #include <QList>
 #include <QObject>
+#include <QTimer>
 #include <bi/devicestorage.h>
 #include <bi/imagestorage.h>
 #include "imainview.h"
@@ -23,6 +24,8 @@ public:
     void appendView(IMainView *w);
     void initView(IMainView *w);
 private:
+    QByteArray _stdErr;
+
     QList<IMainView*> _views;
 
     ImageStorage _imageStorage;
@@ -32,10 +35,16 @@ private:
 
     static MainViewModel::DeviceListModel DeviceModelToWm(const QList<DeviceStorage::DeviceModel>& devices);
 
-    static bool _isprocessReadAction;
+    bool _isprocessReadAction = false;
+    bool _isprocessWriteAction = false;
+
+    void deviceStorageRefresh();
+
+    QTimer _devicePollTimer;
 
 private slots:
     void processReadAction(IMainView *sender);
+    void processWriteAction(IMainView *sender);
 public slots:
     void stdErrReader(QByteArray&d);
     void finished();

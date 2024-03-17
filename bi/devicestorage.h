@@ -23,8 +23,9 @@ public:
         QList<PartitionModel> partitions;
 
         static DeviceModel Parse(const QString& txt);
-
+        
         QString toString();
+        QString usbRootPath();
     };
 private:
     QList<DeviceModel> _devices;
@@ -33,6 +34,7 @@ public:
     QList<DeviceModel> devices(){return _devices;}
     DeviceStorage();
     void Init();
+    QString usbRootPath();
 };
 
 #endif // DEVICESTORAGE_H
