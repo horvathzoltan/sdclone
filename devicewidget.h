@@ -11,6 +11,7 @@ class DeviceWidget: public QWidget
 public:
     QString _usbDevicePath;
     QString _outputFileName;
+    QString _serial;
 
     DeviceWidget();
 };

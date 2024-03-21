@@ -20,6 +20,8 @@ public:
     struct DeviceModel{
         QString devPath;
         QString usbPath;
+        QString serial;
+
         QList<PartitionModel> partitions;
 
         static DeviceModel Parse(const QString& txt);

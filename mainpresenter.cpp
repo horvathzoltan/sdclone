@@ -93,7 +93,7 @@ void MainPresenter::deviceStorageRefresh()
 {
     _deviceStorage.Init();
     QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
-    // itt kell a disk uuid
+    // itt kell a disk serial
     // ami nincs benne a listboxban, és most van, azt bele kell tenni
     // ami benne van a listboxban, és most nincs benne azt ki kell venni
     // mi selected, azt uuid alapján selectelni kell - illetve az elvileg úgy fog magától maradni
@@ -116,6 +116,7 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
 
         d.deviceLabel = device.usbPath;
         d.usbDevicePath = device.usbPath;
+        d.serial = device.serial;
         QString o;
         for(auto&p:device.partitions){
             d.partitionLabels.append(p.toString());

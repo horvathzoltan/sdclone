@@ -123,8 +123,12 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     lay->setGeometry(QRect(0, 0, width, height));
     lay->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
 
+    QVBoxLayout *lay2= new QVBoxLayout();
+    lay->setGeometry(QRect(0, 0, width, height));
+    lay->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+
     QLabel *l1 = new QLabel();
-    l1->setGeometry(QRect(0, 0, l1_width, height));
+    l1->setGeometry(QRect(0, 0, l1_width, height/2));
     l1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     l1->setAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
     QFont f1 = l1->font();
@@ -132,6 +136,16 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     l1->setFont(f1);
 
     l1->setText(device.deviceLabel);
+
+    QLabel *l0 = new QLabel();
+    l0->setGeometry(QRect(0, 0, l1_width, height/2));
+    l0->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    l0->setAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
+    QFont f0 = l0->font();
+    f0.setPointSize(7);
+    l0->setFont(f0);
+
+    l0->setText(device.serial);
 
     QLabel *l2 = new QLabel();
     l2->setGeometry(QRect(0, 0, l2_width, height));
@@ -145,13 +159,16 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     QString txt = device.partitionLabels.join('\n');
     l2->setText(txt);
 
-    lay->addWidget(l1);
+    lay->addLayout(lay2);
+    lay2->addWidget(l1);
+    lay2->addWidget(l0);
     lay->addWidget(l2);
 
     DeviceWidget* w = new DeviceWidget();
 
     w->_usbDevicePath = device.usbDevicePath;
     w->_outputFileName = device.outputFileName;
+    w->_serial = device.serial;
     w->setLayout( lay );
 
     w->setGeometry(QRect(0, 0, width, height));

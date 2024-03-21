@@ -41,11 +41,12 @@ DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
     if(words.count()<1) return {};
 
     auto words0 = words[0].split(':');
-    if(words0.count()<3) return {};
+    if(words0.count()<4) return {};
 
     DeviceModel d {
         .devPath=words0[1],
         .usbPath=words0[2],
+        .serial=words0[3],
         .partitions = {}
     };
 
