@@ -35,6 +35,13 @@ public:
 
     struct DeviceListModel{
         QList<DeviceModel> devices;
+
+        bool containsBySerial(const QString& s) const{
+            for(auto&a:devices){
+                if(a.serial==s) return true;
+            }
+            return false;
+        }
     };
 };
 

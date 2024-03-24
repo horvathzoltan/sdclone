@@ -27,7 +27,7 @@ private:
     MainViewModel::DeviceModel get_Device();
     MainViewModel::StringModel get_InputFileName();
 
-    QList<QListWidgetItem*> _deviceListItems;
+    bool devicesContainsBySerial(const QString& s);
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -37,6 +37,6 @@ signals:
     void WriteActionTriggered(IMainView *sender);
 private slots:    
     void on_pushButton_read_clicked();
-    void on_pushButton_write_clicked();
+    void on_pushButton_write_clicked();    
 };
 #endif // MAINWINDOW_H

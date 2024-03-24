@@ -45,6 +45,7 @@ private:
 private slots:
     void processReadAction(IMainView *sender);
     void processWriteAction(IMainView *sender);
+    void processInitFinished();
 public slots:
     void stdErrReader(QByteArray&d);
     void finished();

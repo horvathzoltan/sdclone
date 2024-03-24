@@ -26,6 +26,10 @@ MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
             deviceStorageRefresh();
         }
     });
+
+    QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
+                     this, SLOT(processInitFinished()));
+
 }
 
 void MainPresenter::appendView(IMainView *w)
@@ -85,19 +89,23 @@ void MainPresenter::initView(IMainView *w) {
         break;
     }
 
-    deviceStorageRefresh();
-    //_devicePollTimer.start(5000);
+    //deviceStorageRefresh();
+    _devicePollTimer.start(2000);
 };
 
 void MainPresenter::deviceStorageRefresh()
 {
     _deviceStorage.Init();
+}
+
+void MainPresenter::processInitFinished()
+{
     QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
     // itt kell a disk serial
     // ami nincs benne a listboxban, és most van, azt bele kell tenni
     // ami benne van a listboxban, és most nincs benne azt ki kell venni
     // mi selected, azt uuid alapján selectelni kell - illetve az elvileg úgy fog magától maradni
-    _views[0]->set_DeviceListClear();
+    //_views[0]->set_DeviceListClear();
     if(devices.isEmpty()){
         _views[0]->set_StatusLine({"usb devices not found"});
     } else{
@@ -116,19 +124,23 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
 
         d.deviceLabel = device.usbPath;
         d.usbDevicePath = device.usbPath;
-        d.serial = device.serial;
+        //d.serial = device.serial;
         QString o;
+        QString s;
+        s+=device.usbPath;
         for(auto&p:device.partitions){
             d.partitionLabels.append(p.toString());
+            s+="_"+p.label+"_"+p.project;
             if(o.isEmpty()){
                 if(!p.project.isEmpty()){
                     o = p.project;
                 } else{
                     o = p.label;
                 }
-            }
+            }                        
         }
         d.outputFileName = o;
+        d.serial = s;
 
         m.devices.append(d);
     }

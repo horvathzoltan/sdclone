@@ -107,6 +107,7 @@ ProcessHelper::Output ProcessHelper::ShellExecuteSudoNoWait(const QString &cmd, 
     return ShellExecuteNoWait(cmd2, timeout_millis);
 }
 
+
 ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int timeout_millis)
 {
     static QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -121,8 +122,8 @@ ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int 
     _pd.setWorkingDirectory(path);
 
     // process indítása
-    QElapsedTimer t;
-    t.start();
+
+    _td.restart();
 
     auto readyR2 = [this]()
     {
@@ -146,11 +147,11 @@ ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int 
 
     auto finishedR2 = [this](int exitCode, QProcess::ExitStatus exitStatus)
     {
-        ProcessHelper::Output o;
-        //o.elapsedMillis = t.elapsed();
-        o.stdOut  = _pd.readAllStandardOutput();
-        o.stdErr = _pd.readAllStandardError();
-        o.exitCode = _pd.exitCode();
+        //ProcessHelper::Output o;
+        _od.elapsedMillis = _td.elapsed();
+        _od.stdOut  = _pd.readAllStandardOutput();
+        _od.stdErr = _pd.readAllStandardError();
+        _od.exitCode = _pd.exitCode();
 
         emit this->finished();
     };
@@ -167,14 +168,20 @@ ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int 
 
     //QObject::disconnect(&process, &QIODevice::readyRead, nullptr, nullptr);
 
-    ProcessHelper::Output o;
-    o.elapsedMillis = t.elapsed();
-    o.stdOut  = _pd.readAllStandardOutput();
-    o.stdErr = _pd.readAllStandardError();
-    o.exitCode = _pd.exitCode();
+    //ProcessHelper::Output o;
+    // o.elapsedMillis = _td.elapsed();
+    // o.stdOut  = _pd.readAllStandardOutput();
+    // o.stdErr = _pd.readAllStandardError();
+    // o.exitCode = _pd.exitCode();
 
-    return o;
+    return {};
 }
+
+ProcessHelper::Output ProcessHelper::GetOut()
+{
+    return _od;
+}
+
 
 // void ProcessHelper::readyR2(&process, this)()
 // {

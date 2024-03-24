@@ -2,16 +2,34 @@
 
 #include <helpers/processhelper.h>
 
+#include <QElapsedTimer>
+
 extern ProcessHelper _processHelper;
 
-DeviceStorage::DeviceStorage() {}
+
+DeviceStorage::DeviceStorage(QObject *parent) :QObject(parent)
+{
+    _pollingProcessHelper.SetPassword("Aladar123");
+    QObject::connect(&_pollingProcessHelper, &ProcessHelper::finished,
+                     this, &DeviceStorage::finished);
+}
+
+// DeviceStorage::DeviceStorage() {
+//     _pollingProcessHelper.SetPassword("Aladar123");
+//     QObject::connect(&_pollingProcessHelper, &ProcessHelper::finished,
+//                      this, &DeviceStorage::finished);
+// }
 
 void DeviceStorage::Init()
+{    
+    QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -q -s Aladar123");
+    ProcessHelper::Output out = _pollingProcessHelper.ShellExecuteNoWait(cmd);
+}
+
+void DeviceStorage::finished()
 {
     _devices.clear();
-    QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -q -s Aladar123");
-    auto out = _processHelper.ShellExecute(cmd);
-
+    ProcessHelper::Output out = _pollingProcessHelper.GetOut();
     if(out.exitCode!=0) return;
     if(out.stdOut.isEmpty()) return;
 
@@ -25,6 +43,8 @@ void DeviceStorage::Init()
             _devices.append(d);
         }
     }
+
+    emit initFinished();
 }
 
 QString DeviceStorage::usbRootPath()
@@ -32,6 +52,8 @@ QString DeviceStorage::usbRootPath()
     auto device = _devices.first();
     return device.usbRootPath();
 }
+
+
 
 DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
 {

@@ -4,9 +4,15 @@
 #include <QList>
 #include <QString>
 
-class DeviceStorage
+#include <helpers/processhelper.h>
+
+class DeviceStorage : public QObject
 {
+    Q_OBJECT
+
 public:
+    explicit DeviceStorage(QObject *parent = nullptr);
+
     struct PartitionModel{
         QString partPath;
         QString label;
@@ -17,6 +23,7 @@ public:
 
         QString toString() const;
     };
+
     struct DeviceModel{
         QString devPath;
         QString usbPath;
@@ -31,12 +38,20 @@ public:
     };
 private:
     QList<DeviceModel> _devices;
+    ProcessHelper _pollingProcessHelper;
 
 public:
     QList<DeviceModel> devices(){return _devices;}
-    DeviceStorage();
+    //DeviceStorage();
     void Init();
     QString usbRootPath();
+
+signals:
+    void initFinished();
+
+public slots:
+    //void stdErrReader(QByteArray&d);
+    void finished();
 };
 
 #endif // DEVICESTORAGE_H

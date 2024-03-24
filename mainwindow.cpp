@@ -62,33 +62,65 @@ void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
 }
 
 void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
-{    
-    // ui->listWidget_devices->clear();
-    // for(auto&a:_deviceListItems) delete a;
-    // _deviceListItems.clear();
+{
+    static bool lock = false;
+    if(lock) return;
+    lock = true;
+    set_StatusLine({"set_DeviceList"});
+    //QList<QListWidgetItem*> itemsToDelete;
+    QList<int> rowToDelete;
 
     for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));        
+        if(w){
+            bool contains = m.containsBySerial(w->_serial);
+
+            if(!contains){
+                //itemsToDelete.append(item);
+                rowToDelete.append(row);
+            }
+        }
+    }
+
+    for (int row : rowToDelete) {
+
         QListWidgetItem *item = ui->listWidget_devices->takeItem(row);
-        QWidget *w = ui->listWidget_devices->itemWidget(item);
-
+        DeviceWidget *w = (DeviceWidget *)(ui->listWidget_devices->itemWidget(item));
         ui->listWidget_devices->removeItemWidget(item);
-
         delete w;
         delete item;
     }
 
     for(auto&device:m.devices){
-        //ui->listWidget_devices->addItems(m.txts);
-        QSize s = ui->listWidget_devices->size();
+        bool contains = devicesContainsBySerial(device.serial);
+        if(!contains)
+        {
+            QSize s = ui->listWidget_devices->size();
+            DeviceWidget *w = CreateDeviceListItemWidget(device, s);
+            QListWidgetItem *item = new QListWidgetItem();
 
-        DeviceWidget *w = CreateDeviceListItemWidget(device, s);
-        QListWidgetItem *item = new QListWidgetItem();
+            item->setSizeHint(QSize(w->width(),w->height()));
+            ui->listWidget_devices->addItem(item);
+            ui->listWidget_devices->setItemWidget(item, w);
 
-        item->setSizeHint(QSize(w->width(),w->height()));
-        //_deviceListItems.append(item);
-        ui->listWidget_devices->addItem(item);
-        ui->listWidget_devices->setItemWidget(item, w);
+            set_StatusLine({"add serial:"+device.usbDevicePath});
+        }
     }
+    int a = ui->listWidget_devices->count();
+    set_StatusLine({"items:"+QString::number(a)});
+    lock = false;
+}
+
+bool MainWindow::devicesContainsBySerial(const QString &s)
+{
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+
+        if(w && w->_serial==s) return true;
+    }
+    return false;
 }
 
 void MainWindow::set_DeviceListClear()
@@ -196,3 +228,5 @@ MainViewModel::StringModel MainWindow::get_InputFileName()
     }
     return m;
 }
+
+

@@ -2,6 +2,7 @@
 #define PROCESSHELPER_H
 
 #include "qobjectdefs.h"
+#include <QElapsedTimer>
 #include <QObject>
 #include <QProcess>
 #include <QStringList>
@@ -16,6 +17,7 @@ private:
 
     static const QString SEPARATOR;
     QString _password="";
+    QElapsedTimer _td;
 public:
      explicit ProcessHelper(QObject *parent = nullptr);
     struct Output{
@@ -46,7 +48,9 @@ public:
     Output ShellExecuteSudoNoWait(const QString& cmd, int timeout_millis = -1);
 
     QProcess _pd;
+    ProcessHelper::Output _od;
 
+    ProcessHelper::Output GetOut();
 signals:
     void stdErrR(QByteArray&d);
     void finished();
