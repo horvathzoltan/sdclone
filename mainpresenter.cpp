@@ -22,7 +22,9 @@ extern ProcessHelper _processHelper;
 MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
 {
     connect(&_devicePollTimer, &QTimer::timeout, this, [this](){
-        if(!_isprocessWriteAction && !_isprocessReadAction){
+        _pollingCounter++;
+        bool ok = isFreeForOperation();
+        if(ok){
             deviceStorageRefresh();
         }
     });
@@ -90,7 +92,7 @@ void MainPresenter::initView(IMainView *w) {
     }
 
     //deviceStorageRefresh();
-    _devicePollTimer.start(2000);
+    _devicePollTimer.start(5000);
 };
 
 void MainPresenter::deviceStorageRefresh()
@@ -151,9 +153,14 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
 
 /*READ*/
 
+bool MainPresenter::isFreeForOperation(){
+    bool isReady = !_isprocessReadAction && !_isprocessWriteAction && !_deviceStorage.IsInPolling();
+    return isReady;
+}
+
 void MainPresenter::processReadAction(IMainView *sender)
 {
-    if(!_isprocessReadAction && !_isprocessWriteAction){
+    if(isFreeForOperation()){
         _isprocessReadAction = true;
         qDebug() << "processReadAction";
         sender->set_StatusLine({"processReadAction"});
@@ -230,7 +237,7 @@ void MainPresenter::finished()
 
 void MainPresenter::processWriteAction(IMainView *sender)
 {
-    if(!_isprocessWriteAction && !_isprocessReadAction){
+    if(isFreeForOperation()){
         _isprocessWriteAction = true;
         qDebug() << "processWriteAction";
         sender->set_StatusLine({"processWriteAction"});

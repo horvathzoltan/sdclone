@@ -39,12 +39,16 @@ public:
 private:
     QList<DeviceModel> _devices;
     ProcessHelper _pollingProcessHelper;
+    quint32 _pollingCounter = 0;
+
+    bool _isInPolling=false;
 
 public:
     QList<DeviceModel> devices(){return _devices;}
     //DeviceStorage();
     void Init();
     QString usbRootPath();
+    bool IsInPolling(){return _isInPolling;}
 
 signals:
     void initFinished();

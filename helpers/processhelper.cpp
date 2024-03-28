@@ -179,7 +179,12 @@ ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int 
 
 ProcessHelper::Output ProcessHelper::GetOut()
 {
-    return _od;
+    ProcessHelper::Output o;
+    o.elapsedMillis = _od.elapsedMillis;
+    o.exitCode = _od.exitCode;
+    o.stdErr = _od.stdErr;
+    o.stdOut = _od.stdOut;
+    return o;
 }
 
 

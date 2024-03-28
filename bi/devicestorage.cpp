@@ -21,35 +21,39 @@ DeviceStorage::DeviceStorage(QObject *parent) :QObject(parent)
 // }
 
 void DeviceStorage::Init()
-{    
+{
+    _isInPolling = true;
+    _pollingCounter++;
+
     QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -q -s Aladar123");
     ProcessHelper::Output out = _pollingProcessHelper.ShellExecuteNoWait(cmd);
 }
 
 void DeviceStorage::finished()
 {
-    _devices.clear();
+    _devices.clear();    
+
     ProcessHelper::Output out = _pollingProcessHelper.GetOut();
     if(out.exitCode!=0) return;
     if(out.stdOut.isEmpty()) return;
 
     QStringList lines = out.stdOut.split('\n');
-    for(auto&l:lines)
-    {
-        if(l.isEmpty()) continue;
+    for (QString &l : lines) {
+        if (l.isEmpty()) continue;
 
         DeviceModel d = DeviceModel::Parse(l);
-        if(!d.devPath.isEmpty()){
+        if (!d.devPath.isEmpty()) {
             _devices.append(d);
         }
     }
 
     emit initFinished();
+    _isInPolling = false;
 }
 
 QString DeviceStorage::usbRootPath()
 {
-    auto device = _devices.first();
+    DeviceModel device = _devices.first();
     return device.usbRootPath();
 }
 

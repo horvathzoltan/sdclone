@@ -41,6 +41,8 @@ private:
     void deviceStorageRefresh();
 
     QTimer _devicePollTimer;
+    bool isFreeForOperation();
+    quint32 _pollingCounter = 0;
 
 private slots:
     void processReadAction(IMainView *sender);
