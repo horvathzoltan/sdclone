@@ -26,25 +26,37 @@ void DeviceStorage::Init()
     _pollingCounter++;
 
     QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -q -s Aladar123");
-    ProcessHelper::Output out = _pollingProcessHelper.ShellExecuteNoWait(cmd);
+    _pollingProcessHelper.ShellExecuteNoWait(cmd);
 }
 
 void DeviceStorage::finished()
 {
-    _devices.clear();    
+    _devices.clear();
+    _usbRootPath = "";
 
     ProcessHelper::Output out = _pollingProcessHelper.GetOut();
-    if(out.exitCode!=0) return;
-    if(out.stdOut.isEmpty()) return;
+    if(out.exitCode!=0) {
+        _isInPolling = false;
+        return;
+    }
+    if(out.stdOut.isEmpty()) {
+        _isInPolling = false;
+        return;
+    }
 
     QStringList lines = out.stdOut.split('\n');
     for (QString &l : lines) {
-        if (l.isEmpty()) continue;
+        if (l.isEmpty()) continue;        
 
         DeviceModel d = DeviceModel::Parse(l);
         if (!d.devPath.isEmpty()) {
             _devices.append(d);
         }
+    }
+
+    if(!_devices.isEmpty()){
+        DeviceModel device = _devices.first();
+        _usbRootPath =  device.usbRootPath();
     }
 
     emit initFinished();
@@ -53,11 +65,8 @@ void DeviceStorage::finished()
 
 QString DeviceStorage::usbRootPath()
 {
-    DeviceModel device = _devices.first();
-    return device.usbRootPath();
+    return _usbRootPath;
 }
-
-
 
 DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
 {

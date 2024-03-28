@@ -237,14 +237,25 @@ void MainPresenter::finished()
 
 void MainPresenter::processWriteAction(IMainView *sender)
 {
-    if(isFreeForOperation()){
-        _isprocessWriteAction = true;
+    if(isFreeForOperation()){        
         qDebug() << "processWriteAction";
         sender->set_StatusLine({"processWriteAction"});
 
         QString usbDevicePath = _deviceStorage.usbRootPath();
 
-        auto m = sender->get_InputFileName();
+        MainViewModel::StringModel m = sender->get_InputFileName();
+
+        if(usbDevicePath.isEmpty()){
+            sender->set_StatusLine({"no usbDevicePath"});
+            return;
+        }
+
+        if(m.txt.isEmpty()){
+            sender->set_StatusLine({"no inputFileName"});
+            return;
+        }
+
+        _isprocessWriteAction = true;
 
         QString cmd = QStringLiteral("/home/pi/writesd2/bin/writesd2 -p %1 -i %2 -s Aladar123 -f -u %3")
                           .arg(_imageStorage.imageFolder(),m.txt,usbDevicePath);

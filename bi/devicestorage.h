@@ -42,6 +42,7 @@ private:
     quint32 _pollingCounter = 0;
 
     bool _isInPolling=false;
+    QString _usbRootPath;
 
 public:
     QList<DeviceModel> devices(){return _devices;}
@@ -53,7 +54,7 @@ public:
 signals:
     void initFinished();
 
-public slots:
+private slots:
     //void stdErrReader(QByteArray&d);
     void finished();
 };

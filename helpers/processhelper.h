@@ -41,11 +41,11 @@ public:
 
 
     Output ShellExecute(const QString& cmd, int timeout_millis = -1);
-    Output ShellExecuteNoWait(const QString& cmd, int timeout_millis = -1);
+    void ShellExecuteNoWait(const QString& cmd, int timeout_millis = -1);
 
     void SetPassword(const QString& v){_password=v;}
     Output ShellExecuteSudo(const QString& cmd, int timeout_millis = -1);
-    Output ShellExecuteSudoNoWait(const QString& cmd, int timeout_millis = -1);
+    void ShellExecuteSudoNoWait(const QString& cmd, int timeout_millis = -1);
 
     QProcess _pd;
     ProcessHelper::Output _od;

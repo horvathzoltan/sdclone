@@ -14,6 +14,46 @@ const QString ProcessHelper::SEPARATOR = '\n'+QStringLiteral("stderr")+'\n';
 
 ProcessHelper::ProcessHelper(QObject *parent) :QObject(parent)
 {
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
+    env.insert("LD_LIBRARY_PATH", "/usr/lib");
+    _pd.setProcessEnvironment(env);
+    QString path = qApp->applicationDirPath();
+    _pd.setWorkingDirectory(path);
+
+    auto readyR2 = [this]()
+    {
+        _pd.setReadChannel(QProcess::StandardError);
+        QByteArray d;
+        while (!_pd.atEnd()) {
+            d = _pd.readAll();
+            if(_writeErr){
+                std::cerr << d.toStdString();
+            }
+        }
+        if(!d.endsWith('\n')) {
+            if(_writeErr){
+                std::cerr << QStringLiteral("\n").toStdString();
+                d.append('\n');
+            }
+        }
+        QByteArray d2(d);
+        emit this->stdErrR(d2);
+    };
+
+    auto finishedR2 = [this](int exitCode, QProcess::ExitStatus exitStatus)
+    {
+        //ProcessHelper::Output o;
+        _od.elapsedMillis = _td.elapsed();
+        _od.stdOut  = _pd.readAllStandardOutput();
+        _od.stdErr = _pd.readAllStandardError();
+        _od.exitCode = _pd.exitCode();
+
+        emit this->finished();
+    };
+
+    QObject::connect(&_pd, &QProcess::readyReadStandardError,readyR2);
+    QObject::connect(&_pd, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),finishedR2);
 
 }
 
@@ -99,92 +139,26 @@ ProcessHelper::Output ProcessHelper::ShellExecuteSudo(const QString &cmd, int ti
     return ShellExecute(cmd2, timeout_millis);
 }
 
-/*DETACHED*/
-ProcessHelper::Output ProcessHelper::ShellExecuteSudoNoWait(const QString &cmd, int timeout_millis){
-    if(_password.isEmpty()) return Output(-1, "ProcessHelper is not inited");
+
+void ProcessHelper::ShellExecuteSudoNoWait(const QString &cmd, int timeout_millis){
+    if(_password.isEmpty()) return;
 
     QString cmd2 = QStringLiteral("echo \"%1\" | sudo -S %2").arg(_password).arg(cmd);
     return ShellExecuteNoWait(cmd2, timeout_millis);
 }
 
 
-ProcessHelper::Output ProcessHelper::ShellExecuteNoWait(const QString &cmd, int timeout_millis)
+void ProcessHelper::ShellExecuteNoWait(const QString &cmd, int timeout_millis)
 {
-    static QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-
-    //QProcess process;
-
-    // process beállítása
-    // workaround - https://bugreports.qt.io/browse/QTBUG-2284
-    env.insert("LD_LIBRARY_PATH", "/usr/lib");
-    _pd.setProcessEnvironment(env);
-    QString path = qApp->applicationDirPath();
-    _pd.setWorkingDirectory(path);
-
-    // process indítása
-
     _td.restart();
-
-    auto readyR2 = [this]()
-    {
-        _pd.setReadChannel(QProcess::StandardError);
-        QByteArray d;
-        while (!_pd.atEnd()) {
-            d = _pd.readAll();
-            if(_writeErr){
-                std::cerr << d.toStdString();
-            }
-        }
-        if(!d.endsWith('\n')) {
-            if(_writeErr){
-                std::cerr << QStringLiteral("\n").toStdString();
-                d.append('\n');
-            }
-        }
-        QByteArray d2(d);
-        emit this->stdErrR(d2);
-    };
-
-    auto finishedR2 = [this](int exitCode, QProcess::ExitStatus exitStatus)
-    {
-        //ProcessHelper::Output o;
-        _od.elapsedMillis = _td.elapsed();
-        _od.stdOut  = _pd.readAllStandardOutput();
-        _od.stdErr = _pd.readAllStandardError();
-        _od.exitCode = _pd.exitCode();
-
-        emit this->finished();
-    };
-
-    //p->setReadChannel(QProcess::StandardError);
-    QObject::connect(&_pd, &QProcess::readyReadStandardError,readyR2);
-    QObject::connect(&_pd, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),finishedR2);
-
-    //process.start("/bin/sh", {"-c", cmd});
-
     _pd.start("/bin/sh", {"-c", cmd});
-    //if(!process.waitForStarted()) return{};
-    //process.waitForFinished(timeout_millis);
 
-    //QObject::disconnect(&process, &QIODevice::readyRead, nullptr, nullptr);
-
-    //ProcessHelper::Output o;
-    // o.elapsedMillis = _td.elapsed();
-    // o.stdOut  = _pd.readAllStandardOutput();
-    // o.stdErr = _pd.readAllStandardError();
-    // o.exitCode = _pd.exitCode();
-
-    return {};
+    return;
 }
 
 ProcessHelper::Output ProcessHelper::GetOut()
 {
-    ProcessHelper::Output o;
-    o.elapsedMillis = _od.elapsedMillis;
-    o.exitCode = _od.exitCode;
-    o.stdErr = _od.stdErr;
-    o.stdOut = _od.stdOut;
-    return o;
+    return _od;
 }
 
 
