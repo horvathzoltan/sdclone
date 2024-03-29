@@ -1,5 +1,5 @@
 #include "processhelper.h"
-#include "qdebug.h"
+//#include "qdebug.h"
 //#include "helpers/logger.h"
 
 #include <QCoreApplication>

@@ -35,22 +35,38 @@ private:
 
     static MainViewModel::DeviceListModel DeviceModelToWm(const QList<DeviceStorage::DeviceModel>& devices);
 
-    bool _isprocessReadAction = false;
-    bool _isprocessWriteAction = false;
 
-    void deviceStorageRefresh();
 
     QTimer _devicePollTimer;
-    bool isFreeForOperation();
+    //bool isFreeForOperation();
     quint32 _pollingCounter = 0;
+
+    void Write();
+    void Read();
+    void PollDevices();
+    void Exit();
+
+    class PresenterState{
+    public:
+        enum State:int{None=0,Write,Read,PollDevices,waitForWrite,waitForRead,Exit};
+
+        void handleInput(MainPresenter* presenter, State s);
+
+    private:
+        State _state=None;
+
+    };
+
+    PresenterState _presenterState;
 
 private slots:
     void processReadAction(IMainView *sender);
     void processWriteAction(IMainView *sender);
     void processInitFinished();
+    void processExitAction(IMainView *sender);
 public slots:
     void stdErrReader(QByteArray&d);
-    void finished();
+    void finished();    
 };
 
 #endif // MAINPRESENTER_H

@@ -19,6 +19,7 @@ private:
     //void set_DoWorkRModel(const MainViewModel::DoWorkRModel& m);
     //MainViewModel::DoWorkModel get_DoWorkModel();
     void set_StatusLine(const MainViewModel::StringModel& m);
+    void set_PresenterStatus(const MainViewModel::StringModel& m);
     void set_StorageLabel(const MainViewModel::StringModel& m);
     void set_ImageFileList(const MainViewModel::StringListModel& m);
     void set_DeviceList(const MainViewModel::DeviceListModel& m);
@@ -35,8 +36,10 @@ public:
 signals:
     void ReadActionTriggered(IMainView *sender);
     void WriteActionTriggered(IMainView *sender);
+    void ExitActionTriggered(IMainView *sender);
 private slots:    
     void on_pushButton_read_clicked();
-    void on_pushButton_write_clicked();    
+    void on_pushButton_write_clicked();
+    void on_pushButton_exit_clicked();
 };
 #endif // MAINWINDOW_H

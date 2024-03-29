@@ -10,6 +10,7 @@
 #include <QSqlQuery>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QCoreApplication>
 
 
 
@@ -23,10 +24,7 @@ MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
 {
     connect(&_devicePollTimer, &QTimer::timeout, this, [this](){
         _pollingCounter++;
-        bool ok = isFreeForOperation();
-        if(ok){
-            deviceStorageRefresh();
-        }
+        _presenterState.handleInput(this, PresenterState::PollDevices);
     });
 
     QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
@@ -46,6 +44,9 @@ void MainPresenter::appendView(IMainView *w)
 
     QObject::connect(view_obj, SIGNAL(WriteActionTriggered(IMainView*)),
                      this, SLOT(processWriteAction(IMainView*)));
+
+    QObject::connect(view_obj, SIGNAL(ExitActionTriggered(IMainView*)),
+                     this, SLOT(processExitAction(IMainView*)));
 
     refreshView(w);
 }
@@ -91,14 +92,11 @@ void MainPresenter::initView(IMainView *w) {
         break;
     }
 
-    //deviceStorageRefresh();
-    _devicePollTimer.start(5000);
+    _presenterState.handleInput(this, PresenterState::PollDevices);
+    _devicePollTimer.start(1000);
 };
 
-void MainPresenter::deviceStorageRefresh()
-{
-    _deviceStorage.Init();
-}
+
 
 void MainPresenter::processInitFinished()
 {
@@ -114,6 +112,7 @@ void MainPresenter::processInitFinished()
         MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices);
         _views[0]->set_DeviceList(deviceListWm);
     }
+    _presenterState.handleInput(this,PresenterState::None);
 }
 
 
@@ -149,45 +148,7 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<Device
     return m;
 }
 
-
-
 /*READ*/
-
-bool MainPresenter::isFreeForOperation(){
-    bool isReady = !_isprocessReadAction && !_isprocessWriteAction && !_deviceStorage.IsInPolling();
-    return isReady;
-}
-
-void MainPresenter::processReadAction(IMainView *sender)
-{
-    if(isFreeForOperation()){
-        _isprocessReadAction = true;
-        qDebug() << "processReadAction";
-        sender->set_StatusLine({"processReadAction"});
-
-        MainViewModel::DeviceModel a = sender->get_Device();
-
-        sender->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
-        QDateTime now = QDateTime::currentDateTime();
-        QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
-        QString o = a.outputFileName+"_"+timestamp;
-        sender->set_StatusLine({"outputFileName:"+o});
-
-        QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %2 -s Aladar123 -f -u %3")
-                        .arg(_imageStorage.imageFolder(),o,a.usbDevicePath);
-
-        qDebug()<<"cmd:"+cmd;
-        _t.start();
-
-        QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
-                       this, &MainPresenter::stdErrReader);
-        QObject::connect(&_processHelper, &ProcessHelper::finished,
-                          this, &MainPresenter::finished);
-
-        _processHelper.ShellExecuteSudoNoWait(cmd);
-    }
-}
-
 
 void MainPresenter::stdErrReader(QByteArray&d)
 {
@@ -219,55 +180,191 @@ void MainPresenter::finished()
     QObject::disconnect(&_processHelper, &ProcessHelper::finished,
                      this, &MainPresenter::finished);
 
-    if(_isprocessReadAction)
-        _isprocessReadAction = false;
-    if(_isprocessWriteAction)
-        _isprocessWriteAction = false;
-
     QString g = QString(_stdErr);
     _stdErr.clear();
     if(!g.isEmpty()){
         _views[0]->set_StatusLine({g});
     }
     _views[0]->set_StatusLine({"finished"});
+
+    _presenterState.handleInput(this, PresenterState::None);
 }
 
 /*WRITE*/
 //./writesd2 -p /media/pi/butyok2/clone/ -i img57 -s Aladar123 -f -u 1-1.2
 
 void MainPresenter::processWriteAction(IMainView *sender)
+{    
+    _presenterState.handleInput(this, PresenterState::Write);
+}
+
+void MainPresenter::processReadAction(IMainView *sender)
 {
-    if(isFreeForOperation()){        
-        qDebug() << "processWriteAction";
-        sender->set_StatusLine({"processWriteAction"});
+    _presenterState.handleInput(this, PresenterState::Read);
+}
 
-        QString usbDevicePath = _deviceStorage.usbRootPath();
+void MainPresenter::processExitAction(IMainView *sender)
+{
+    _presenterState.handleInput(this, PresenterState::Exit);
+}
 
-        MainViewModel::StringModel m = sender->get_InputFileName();
+void MainPresenter::Read(){
+    qDebug() << "processReadAction";
+    _views[0]->set_StatusLine({"processReadAction"});
 
-        if(usbDevicePath.isEmpty()){
-            sender->set_StatusLine({"no usbDevicePath"});
-            return;
-        }
+    MainViewModel::DeviceModel a = _views[0]->get_Device();
 
-        if(m.txt.isEmpty()){
-            sender->set_StatusLine({"no inputFileName"});
-            return;
-        }
+    _views[0]->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
+    QDateTime now = QDateTime::currentDateTime();
+    QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
+    QString o = a.outputFileName+"_"+timestamp;
+    _views[0]->set_StatusLine({"outputFileName:"+o});
 
-        _isprocessWriteAction = true;
+    QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %2 -s Aladar123 -f -u %3")
+                      .arg(_imageStorage.imageFolder(),o,a.usbDevicePath);
 
-        QString cmd = QStringLiteral("/home/pi/writesd2/bin/writesd2 -p %1 -i %2 -s Aladar123 -f -u %3")
-                          .arg(_imageStorage.imageFolder(),m.txt,usbDevicePath);
+    qDebug()<<"cmd:"+cmd;
+    _t.start();
 
-        qDebug()<<"cmd:"+cmd;
-        _t.start();
+    QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
+                     this, &MainPresenter::stdErrReader);
+    QObject::connect(&_processHelper, &ProcessHelper::finished,
+                     this, &MainPresenter::finished);
 
-        QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
-                         this, &MainPresenter::stdErrReader);
-        QObject::connect(&_processHelper, &ProcessHelper::finished,
-                         this, &MainPresenter::finished);
+    _processHelper.ShellExecuteSudoNoWait(cmd);
+}
 
-        _processHelper.ShellExecuteSudoNoWait(cmd);
+void MainPresenter::Write()
+{
+    qDebug() << "processWriteAction";
+    _views[0]->set_StatusLine({"processWriteAction"});
+
+    QString usbDevicePath = _deviceStorage.usbRootPath();
+
+    MainViewModel::StringModel m = _views[0]->get_InputFileName();
+
+    if(usbDevicePath.isEmpty()){
+        _views[0]->set_StatusLine({"no usbDevicePath"});
+        return;
     }
+
+    if(m.txt.isEmpty()){
+        _views[0]->set_StatusLine({"no inputFileName"});
+        return;
+    }        
+
+
+    QString cmd = QStringLiteral("/home/pi/writesd2/bin/writesd2 -p %1 -i %2 -s Aladar123 -f -u %3")
+                      .arg(_imageStorage.imageFolder(),m.txt,usbDevicePath);
+
+    qDebug()<<"cmd:"+cmd;
+    _t.start();
+
+    QObject::connect(&_processHelper, &ProcessHelper::stdErrR,
+                     this, &MainPresenter::stdErrReader);
+    QObject::connect(&_processHelper, &ProcessHelper::finished,
+                     this, &MainPresenter::finished);
+
+
+    _processHelper.ShellExecuteSudoNoWait(cmd);
+}
+
+void MainPresenter::PollDevices()
+{
+    _deviceStorage.Init();
+}
+
+
+void MainPresenter::Exit()
+{
+    QCoreApplication::quit();
+}
+
+
+void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State input)
+{
+    switch(_state){
+    case None:
+        switch(input){
+        case Write:
+            _state = input;
+            presenter->_views[0]->set_PresenterStatus({"Write"});
+            presenter->Write();
+            break;
+        case Read:
+            _state = input;
+            presenter->_views[0]->set_PresenterStatus({"Read"});
+            presenter->Read();
+            break;
+        case PollDevices:
+            _state = input;
+            presenter->_views[0]->set_PresenterStatus({"PollDevices"});
+            presenter->PollDevices();
+            break;
+        case Exit:
+            _state = input;
+            presenter->_views[0]->set_PresenterStatus({"Exit"});
+            presenter->Exit();
+            break;
+        default:break;
+        }
+        break;
+    case PollDevices:
+        switch(input){
+        case Write:
+            _state = waitForWrite;
+            presenter->_views[0]->set_PresenterStatus({"waitForWrite"});
+            break;
+        case Read:
+            _state = waitForRead;
+            presenter->_views[0]->set_PresenterStatus({"waitForRead"});
+            break;
+        case None:
+            _state = None;
+            presenter->_views[0]->set_PresenterStatus({"None"});
+            break;
+        default:break;
+        }
+        break;
+    case Write:
+        switch(input){
+        case None:
+            _state = None;
+            presenter->_views[0]->set_PresenterStatus({"None"});
+            break;
+        default:break;
+        }
+        break;
+    case Read:
+        switch(input){
+        case None:
+            _state = None;
+            presenter->_views[0]->set_PresenterStatus({"None"});
+            break;
+        default:break;
+        }
+        break;
+    case waitForWrite:
+        switch(input){
+        case None:
+            _state = Write;
+            presenter->_views[0]->set_PresenterStatus({"Write"});
+            presenter->Write();
+            break;
+            default:break;
+        }
+        break;
+    case waitForRead:
+        switch(input){
+        case None:
+            _state = Read;
+            presenter->_views[0]->set_PresenterStatus({"Read"});
+            presenter->Read();
+            break;
+        default:break;
+        }
+        break;
+    default:break;
+    }
+
 }
