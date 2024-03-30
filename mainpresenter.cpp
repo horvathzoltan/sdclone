@@ -93,7 +93,7 @@ void MainPresenter::initView(IMainView *w) {
     }
 
     //_presenterState.handleInput(this, PresenterState::PollDevices);
-    _devicePollTimer.start(2000);
+    _devicePollTimer.start(5000);
 };
 
 
