@@ -92,28 +92,12 @@ void MainPresenter::initView(IMainView *w) {
         break;
     }
 
-    _presenterState.handleInput(this, PresenterState::PollDevices);
-    _devicePollTimer.start(1000);
+    //_presenterState.handleInput(this, PresenterState::PollDevices);
+    _devicePollTimer.start(2000);
 };
 
 
 
-void MainPresenter::processInitFinished()
-{
-    QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
-    // itt kell a disk serial
-    // ami nincs benne a listboxban, és most van, azt bele kell tenni
-    // ami benne van a listboxban, és most nincs benne azt ki kell venni
-    // mi selected, azt uuid alapján selectelni kell - illetve az elvileg úgy fog magától maradni
-    //_views[0]->set_DeviceListClear();
-    if(devices.isEmpty()){
-        _views[0]->set_StatusLine({"usb devices not found"});
-    } else{
-        MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices);
-        _views[0]->set_DeviceList(deviceListWm);
-    }
-    _presenterState.handleInput(this,PresenterState::None);
-}
 
 
 MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<DeviceStorage::DeviceModel> &devices)
@@ -273,6 +257,24 @@ void MainPresenter::PollDevices()
 {
     _deviceStorage.Init();
 }
+
+void MainPresenter::processInitFinished()
+{
+    QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
+    // itt kell a disk serial
+    // ami nincs benne a listboxban, és most van, azt bele kell tenni
+    // ami benne van a listboxban, és most nincs benne azt ki kell venni
+    // mi selected, azt uuid alapján selectelni kell - illetve az elvileg úgy fog magától maradni
+    //_views[0]->set_DeviceListClear();
+    if(devices.isEmpty()){
+        _views[0]->set_StatusLine({"usb devices not found"});
+    } else{
+        MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices);
+        _views[0]->set_DeviceList(deviceListWm);
+    }
+    _presenterState.handleInput(this,PresenterState::None);
+}
+
 
 
 void MainPresenter::Exit()

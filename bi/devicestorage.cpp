@@ -35,28 +35,22 @@ void DeviceStorage::finished()
     _usbRootPath = "";
 
     ProcessHelper::Output out = _pollingProcessHelper.GetOut();
-    if(out.exitCode!=0) {
-        _isInPolling = false;
-        return;
-    }
-    if(out.stdOut.isEmpty()) {
-        _isInPolling = false;
-        return;
-    }
+    bool valid = out.exitCode==0 && !out.stdOut.isEmpty();
+    if(valid) {
+        QStringList lines = out.stdOut.split('\n');
+        for (QString &l : lines) {
+            if (l.isEmpty()) continue;
 
-    QStringList lines = out.stdOut.split('\n');
-    for (QString &l : lines) {
-        if (l.isEmpty()) continue;        
-
-        DeviceModel d = DeviceModel::Parse(l);
-        if (!d.devPath.isEmpty()) {
-            _devices.append(d);
+            DeviceModel d = DeviceModel::Parse(l);
+            if (!d.devPath.isEmpty()) {
+                _devices.append(d);
+            }
         }
-    }
 
-    if(!_devices.isEmpty()){
-        DeviceModel device = _devices.first();
-        _usbRootPath =  device.usbRootPath();
+        if(!_devices.isEmpty()){
+            DeviceModel device = _devices.first();
+            _usbRootPath =  device.usbRootPath();
+        }
     }
 
     emit initFinished();
