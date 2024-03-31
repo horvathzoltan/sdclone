@@ -24,10 +24,13 @@ private:
     void set_ImageFileList(const MainViewModel::StringListModel& m);
     void set_DeviceList(const MainViewModel::DeviceListModel& m);
     void set_DeviceListClear();
+    MainViewModel::WriteStatusWM getLastWriteStatus();
+    void set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m);
 
     MainViewModel::DeviceModel get_Device();
     MainViewModel::StringModel get_InputFileName();
 
+    void SetDeviceWriteState(const MainViewModel::WriteStatus& m);
     bool devicesContainsBySerial(const QString& s);
 public:
     explicit MainWindow(QWidget *parent = nullptr);

@@ -23,6 +23,7 @@ public:
     explicit MainPresenter(QObject *parent = nullptr);
     void appendView(IMainView *w);
     void initView(IMainView *w);
+    static int findFirstDiffPos(const QString &a, const QString &b);
 private:
     QByteArray _stdErr;
 
@@ -33,7 +34,9 @@ private:
 
     void refreshView(IMainView *w);
 
-    static MainViewModel::DeviceListModel DeviceModelToWm(const QList<DeviceStorage::DeviceModel>& devices);
+    static MainViewModel::DeviceListModel DeviceModelToWm(
+        const QList<DeviceStorage::DeviceModel>& devices,
+        const QString& usbRootPath);
 
 
 
@@ -45,13 +48,14 @@ private:
     void Read();
     void PollDevices();
     void Exit();
+    void ProcessWriteResult();
 
     class PresenterState{
     public:
         enum State:int{None=0,Write,Read,PollDevices,waitForWrite,waitForRead,Exit};
 
         void handleInput(MainPresenter* presenter, State s);
-
+        //State state(){return _state;}
     private:
         State _state=None;
 

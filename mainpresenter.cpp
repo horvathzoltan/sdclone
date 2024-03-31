@@ -92,23 +92,38 @@ void MainPresenter::initView(IMainView *w) {
         break;
     }
 
-    //_presenterState.handleInput(this, PresenterState::PollDevices);
+    _presenterState.handleInput(this, PresenterState::PollDevices);
     _devicePollTimer.start(5000);
 };
 
 
+//a = _deviceStorage.usbRootPath();
 
+int MainPresenter::findFirstDiffPos(const QString& a, const QString& b) {
+    if (a == b) return -1;
+    int min = qMin(a.count(),b.count());
+    int i;
+    for(i=0;i<min;i++){
+        if(a[i]!=b[i]) break;
+    }
+    return i;
+}
 
-
-MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(const QList<DeviceStorage::DeviceModel> &devices)
+MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(
+    const QList<DeviceStorage::DeviceModel> &devices,
+    const QString& usbRootPath)
 {
-    MainViewModel::DeviceListModel m;
+    MainViewModel::DeviceListModel m;    
 
     for(auto&device:devices){
         MainViewModel::DeviceModel d;
 
-        d.deviceLabel = device.usbPath;
+        int ix = findFirstDiffPos(device.usbPath, usbRootPath);
+        QString label = (ix<0)?device.usbPath:device.usbPath.mid(ix);
+
+        d.deviceLabel = label;
         d.usbDevicePath = device.usbPath;
+        d.devicePath = device.devPath;
         //d.serial = device.serial;
         QString o;
         QString s;
@@ -269,7 +284,7 @@ void MainPresenter::processInitFinished()
     if(devices.isEmpty()){
         _views[0]->set_StatusLine({"usb devices not found"});
     } else{
-        MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices);
+        MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices, _deviceStorage.usbRootPath());
         _views[0]->set_DeviceList(deviceListWm);
     }
     _presenterState.handleInput(this,PresenterState::None);
@@ -282,6 +297,10 @@ void MainPresenter::Exit()
     QCoreApplication::quit();
 }
 
+void MainPresenter::ProcessWriteResult(){
+    MainViewModel::WriteStatusWM wm = _views[0]->getLastWriteStatus();
+    _views[0]->set_DeviceWriteStates(wm);
+}
 
 void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State input)
 {
@@ -331,7 +350,8 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
     case Write:
         switch(input){
         case None:
-            _state = None;
+            _state = None;                        
+            presenter->ProcessWriteResult();
             presenter->_views[0]->set_PresenterStatus({"None"});
             break;
         default:break;

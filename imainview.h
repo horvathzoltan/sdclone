@@ -19,6 +19,8 @@ public:
     virtual void set_ImageFileList(const MainViewModel::StringListModel& m) = 0;
     virtual void set_DeviceList(const MainViewModel::DeviceListModel& m) = 0;
     virtual void set_DeviceListClear() = 0;
+    virtual MainViewModel::WriteStatusWM getLastWriteStatus() = 0;
+    virtual void set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m) = 0;
 
     virtual MainViewModel::StringModel get_InputFileName() = 0;
 

@@ -57,6 +57,39 @@ void MainWindow::set_StatusLine(const MainViewModel::StringModel &m)
     }
 }
 
+/*
+processWriteAction
+check:/dev/sdc: 1-1.1.2:1.0 OK
+ok
+finished
+*/
+MainViewModel::WriteStatusWM MainWindow::getLastWriteStatus(){
+    QString a = ui->plainTextEdit_status->toPlainText();
+    MainViewModel::WriteStatusWM r;
+
+    int ix = a.lastIndexOf("processWriteAction");
+    if(ix>0){
+        int ix2 = a.indexOf("finished", ix);
+        if(ix2>0){
+            QStringList b = a.mid(ix, ix2-ix).split('\n');
+            for(auto&c:b){
+                if(c.startsWith("check:")){
+                    QStringList tokens = c.split(':');
+                    if(tokens.length()>=4){
+                        MainViewModel::WriteStatus m;
+                        m.devicePath = tokens[1];
+                        m.usbPath = tokens[2];
+                        m.status = tokens[3]=="OK";
+                        r.append(m);
+                    }
+                }
+            }
+        }
+    }
+    return r;
+}
+
+
 void MainWindow::set_PresenterStatus(const MainViewModel::StringModel &m)
 {
     ui->label_status->setText(m.txt);
@@ -72,6 +105,27 @@ void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
     ui->listWidget_images->clear();
     if(!m.txts.isEmpty()){
         ui->listWidget_images->addItems(m.txts);
+    }
+}
+
+void MainWindow::set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m) {
+    for(auto&a:m.states()){
+        SetDeviceWriteState(a);
+    }
+}
+
+void MainWindow::SetDeviceWriteState(const MainViewModel::WriteStatus &m)
+{
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+        if(w){
+            bool ok = w->_usbDevicePath==m.usbPath;
+
+            if(!ok){
+                w->setStatus(m.status);
+            }
+        }
     }
 }
 
@@ -162,7 +216,7 @@ MainViewModel::DeviceModel MainWindow::get_Device()
 DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel& device, const QSize& s)
 {
     int width = s.width()-8;
-    int height = 60;
+    int height = 45;
     int l1_width = s.width()/3;
     int l2_width = s.width()-l1_width;
 
@@ -170,11 +224,12 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     lay->setGeometry(QRect(0, 0, width, height));
     lay->setAlignment(Qt::AlignTop|Qt::AlignLeft);
     lay->setSpacing(0);
+    lay->setMargin(0);
     QVBoxLayout *lay2= new QVBoxLayout();
     lay2->setGeometry(QRect(0, 0, width, height));
     lay2->setAlignment(Qt::AlignTop|Qt::AlignLeft);
     lay2->setSpacing(0);
-
+    lay2->setMargin(0);
     // device
     QLabel *l1 = new QLabel();
     QFont f1 = l1->font();
@@ -194,12 +249,13 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
 
     // serial
     QLabel *l0 = new QLabel();
+
     l0->setGeometry(QRect(0, 0, l1_width, (height/3)));
 
     QFont f0 = l0->font();
     f0.setPointSize(7);
     l0->setFont(f0);
-    l0->setText(device.serial);
+    l0->setText(device.devicePath);//serial
 
     l0->setMinimumSize(l1_width, (height/3));
     l0->setMaximumSize(l1_width, (height/3));
@@ -220,10 +276,14 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     QString txt = device.partitionLabels.join('\n');
     l2->setText(txt);
 
+    //QFrame* sep = new QFrame;
+    //sep->setFrameShape(QFrame::HLine);
+
     lay->addLayout(lay2);
     lay2->addWidget(l1);
     lay2->addWidget(l0);
     lay->addWidget(l2);
+    //lay->addWidget(sep);
 
     DeviceWidget* w = new DeviceWidget();
     // QPalette pal = QPalette();
@@ -235,6 +295,11 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     // w->setAutoFillBackground(true);
     // w->setPalette(pal);
 
+    w->setMinimumSize(width, height);
+    w->setMaximumSize(width, height);
+    w->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    w->setStatusLabel(l0);
     w->_usbDevicePath = device.usbDevicePath;
     w->_outputFileName = device.outputFileName;
     w->_serial = device.serial;
@@ -267,6 +332,8 @@ MainViewModel::StringModel MainWindow::get_InputFileName()
     }
     return m;
 }
+
+
 
 
 

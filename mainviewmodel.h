@@ -28,6 +28,7 @@ public:
     struct DeviceModel{
         QString deviceLabel;
         QString usbDevicePath;
+        QString devicePath;
         QString serial;
         QString outputFileName;
         QStringList partitionLabels;
@@ -42,6 +43,20 @@ public:
             }
             return false;
         }
+    };
+
+    struct WriteStatus{
+        QString devicePath;
+        QString usbPath;
+        bool status;
+    };
+
+    struct WriteStatusWM{
+    private:
+        QList<WriteStatus> _states;
+    public:
+        void append(const WriteStatus&m ){_states.append(m);}
+        QList<WriteStatus> states()const{return _states;}
     };
 };
 
