@@ -26,6 +26,7 @@ private:
     void set_DeviceListClear();
     MainViewModel::WriteStatusWM getLastWriteStatus();
     void set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m);
+    void set_ClearDeviceWriteStates();
 
     MainViewModel::DeviceModel get_Device();
     MainViewModel::StringModel get_InputFileName();
@@ -44,5 +45,6 @@ private slots:
     void on_pushButton_read_clicked();
     void on_pushButton_write_clicked();
     void on_pushButton_exit_clicked();
+    void on_pushButton_log_clicked();
 };
 #endif // MAINWINDOW_H

@@ -11,6 +11,8 @@ class DeviceWidget: public QWidget
 
 private:
     QLabel* _statusLabel;
+    QLabel* _labelLabel;
+    QColor _defaultBackground;
 public:
     QString _usbDevicePath;
     QString _outputFileName;
@@ -19,7 +21,10 @@ public:
     DeviceWidget();
 
     void setStatus(bool status);
+    void resetStatus();
     void setStatusLabel(QLabel*v){_statusLabel=v;}
+    void setLabelLabel(QLabel*v){_labelLabel=v;}
+    void setDefaultBackground(QColor v){_defaultBackground = v;}
 };
 
 #endif // DEVICEWIDGET_H

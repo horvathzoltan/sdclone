@@ -7,7 +7,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
       , ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);   
+    ui->setupUi(this);
+    ui->plainTextEdit_status->setVisible(false);
 }
 
 MainWindow::~MainWindow()
@@ -59,7 +60,7 @@ void MainWindow::set_StatusLine(const MainViewModel::StringModel &m)
 
 /*
 processWriteAction
-check:/dev/sdc: 1-1.1.2:1.0 OK
+check:/dev/sdc:1-1.1.2_1.0:OK
 ok
 finished
 */
@@ -120,14 +121,21 @@ void MainWindow::SetDeviceWriteState(const MainViewModel::WriteStatus &m)
         QListWidgetItem *item = ui->listWidget_devices->item(row);
         DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
         if(w){
-            bool ok = w->_usbDevicePath==m.usbPath;
-
-            if(!ok){
+            if(w->_usbDevicePath==m.usbPath){
                 w->setStatus(m.status);
             }
         }
     }
 }
+
+void MainWindow::set_ClearDeviceWriteStates() {
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+        if(w) w->resetStatus();
+    }
+}
+
 
 void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
 {
@@ -215,7 +223,7 @@ MainViewModel::DeviceModel MainWindow::get_Device()
 
 DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel& device, const QSize& s)
 {
-    int width = s.width()-8;
+    int width = s.width()-16;
     int height = 45;
     int l1_width = s.width()/3;
     int l2_width = s.width()-l1_width;
@@ -300,6 +308,7 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     w->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     w->setStatusLabel(l0);
+    w->setLabelLabel(l1);
     w->_usbDevicePath = device.usbDevicePath;
     w->_outputFileName = device.outputFileName;
     w->_serial = device.serial;
@@ -307,7 +316,8 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
 
     w->setGeometry(QRect(0, 0, width, height));
 
-
+    QPalette pal = QPalette();
+    w->setDefaultBackground(Qt::GlobalColor::transparent);
 
     return w;
 }
@@ -326,9 +336,12 @@ void MainWindow::on_pushButton_write_clicked()
 MainViewModel::StringModel MainWindow::get_InputFileName()
 {
     MainViewModel::StringModel m;
-    QListWidgetItem *item = ui->listWidget_images->selectedItems().first();
-    if(item){
-        m.txt = item->text();
+    auto items = ui->listWidget_images->selectedItems();
+    if(!items.isEmpty()){
+        QListWidgetItem *item = items.first();
+        if(item){
+            m.txt = item->text();
+        }
     }
     return m;
 }
@@ -340,5 +353,12 @@ MainViewModel::StringModel MainWindow::get_InputFileName()
 void MainWindow::on_pushButton_exit_clicked()
 {
     emit ExitActionTriggered(this);
+}
+
+
+void MainWindow::on_pushButton_log_clicked()
+{
+    bool visible = ui->plainTextEdit_status->isVisible();
+    ui->plainTextEdit_status->setVisible(!visible);
 }
 

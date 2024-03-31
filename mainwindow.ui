@@ -113,6 +113,9 @@
     </item>
     <item>
      <widget class="QPlainTextEdit" name="plainTextEdit_status">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
@@ -145,6 +148,13 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_log">
+        <property name="text">
+         <string>Log</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_exit">

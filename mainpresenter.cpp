@@ -92,6 +92,7 @@ void MainPresenter::initView(IMainView *w) {
         break;
     }
 
+
     _presenterState.handleInput(this, PresenterState::PollDevices);
     _devicePollTimer.start(5000);
 };
@@ -118,8 +119,11 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(
     for(auto&device:devices){
         MainViewModel::DeviceModel d;
 
-        int ix = findFirstDiffPos(device.usbPath, usbRootPath);
+        int ix = findFirstDiffPos(device.usbPath, usbRootPath);        
         QString label = (ix<0)?device.usbPath:device.usbPath.mid(ix);
+        if(label.startsWith('.')) label = label.mid(1);
+        ix = label.indexOf('_');
+        if(ix>0) label = label.left(ix);
 
         d.deviceLabel = label;
         d.usbDevicePath = device.usbPath;
@@ -210,8 +214,15 @@ void MainPresenter::processExitAction(IMainView *sender)
 void MainPresenter::Read(){
     qDebug() << "processReadAction";
     _views[0]->set_StatusLine({"processReadAction"});
+    _views[0]->set_ClearDeviceWriteStates();
 
     MainViewModel::DeviceModel a = _views[0]->get_Device();
+
+    if(a.usbDevicePath.isEmpty()){
+        _views[0]->set_StatusLine({"no usbDevicePath"});
+        _presenterState.handleInput(this, PresenterState::None);
+        return;
+    }
 
     _views[0]->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
     QDateTime now = QDateTime::currentDateTime();
@@ -237,18 +248,21 @@ void MainPresenter::Write()
 {
     qDebug() << "processWriteAction";
     _views[0]->set_StatusLine({"processWriteAction"});
+    _views[0]->set_ClearDeviceWriteStates();
 
     QString usbDevicePath = _deviceStorage.usbRootPath();
 
-    MainViewModel::StringModel m = _views[0]->get_InputFileName();
-
     if(usbDevicePath.isEmpty()){
         _views[0]->set_StatusLine({"no usbDevicePath"});
+        _presenterState.handleInput(this, PresenterState::None);
         return;
     }
 
+    MainViewModel::StringModel m = _views[0]->get_InputFileName();
+
     if(m.txt.isEmpty()){
         _views[0]->set_StatusLine({"no inputFileName"});
+        _presenterState.handleInput(this, PresenterState::None);
         return;
     }        
 
@@ -286,8 +300,10 @@ void MainPresenter::processInitFinished()
     } else{
         MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices, _deviceStorage.usbRootPath());
         _views[0]->set_DeviceList(deviceListWm);
+        //_views[0]->set_ClearDeviceWriteStates();
     }
     _presenterState.handleInput(this,PresenterState::None);
+
 }
 
 
