@@ -26,11 +26,18 @@ public:
     static int findFirstDiffPos(const QString &a, const QString &b);
 private:
     QByteArray _stdErr;
-
     QList<IMainView*> _views;
-
     ImageStorage _imageStorage;
     DeviceStorage _deviceStorage;
+    MainViewModel::WriteStatusWM _wm;
+    qlonglong _writeBytesAll=0;
+    int _writeBlockSize=0;
+    qlonglong _writeBytes=0;
+    qlonglong _writeBytes2=0;
+    QElapsedTimer _writeTimer;
+
+    void SetRemainingTime();
+    void SetTotalTime();
 
     void refreshView(IMainView *w);
 
@@ -38,6 +45,7 @@ private:
         const QList<DeviceStorage::DeviceModel>& devices,
         const QString& usbRootPath);
 
+    static QString GetSerial(const DeviceStorage::DeviceModel &device);
 
 
     QTimer _devicePollTimer;
@@ -55,7 +63,7 @@ private:
         enum State:int{None=0,Write,Read,PollDevices,waitForWrite,waitForRead,Exit};
 
         void handleInput(MainPresenter* presenter, State s);
-        //State state(){return _state;}
+        State state(){return _state;}
     private:
         State _state=None;
 

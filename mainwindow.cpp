@@ -9,6 +9,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->plainTextEdit_status->setVisible(false);
+    ui->progressBar->setVisible(false);
+    ui->label_progress->setVisible(false);
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +84,34 @@ MainViewModel::WriteStatusWM MainWindow::getLastWriteStatus(){
                         m.usbPath = tokens[2];
                         m.status = tokens[3]=="OK";
                         r.append(m);
+                    }
+                }
+            }
+        }
+    }
+    return r;
+}
+
+MainViewModel::IntModel MainWindow::get_WriteBytes()
+{
+    QString a = ui->plainTextEdit_status->toPlainText();
+    MainViewModel::IntModel r{0};
+
+    int ix = a.lastIndexOf("processWriteAction");
+    if(ix>0){
+        int ix2 = a.indexOf("finished", ix);
+        if(ix2>0){
+            QStringList b = a.mid(ix, ix2-ix).split('\n');
+            for(auto&c:b){
+                if(c.startsWith("writing:")){
+                    QStringList tokens = c.split(' ');
+                    if(tokens.length()>=4){
+                        bool ok;
+                        qlonglong i = tokens[1].toLongLong(&ok);
+                        if(ok){
+                            r.value = i;
+                            break;
+                        }
                     }
                 }
             }
@@ -263,7 +293,7 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     QFont f0 = l0->font();
     f0.setPointSize(7);
     l0->setFont(f0);
-    l0->setText(device.devicePath);//serial
+    l0->setText(device.serial);//serial
 
     l0->setMinimumSize(l1_width, (height/3));
     l0->setMaximumSize(l1_width, (height/3));
@@ -346,10 +376,6 @@ MainViewModel::StringModel MainWindow::get_InputFileName()
     return m;
 }
 
-
-
-
-
 void MainWindow::on_pushButton_exit_clicked()
 {
     emit ExitActionTriggered(this);
@@ -362,3 +388,24 @@ void MainWindow::on_pushButton_log_clicked()
     ui->plainTextEdit_status->setVisible(!visible);
 }
 
+/*progress*/
+void MainWindow::set_ShowProgressbar()
+{
+    ui->progressBar->setVisible(true);
+    ui->label_progress->setVisible(true);
+}
+
+void MainWindow::set_HideProgressbar()
+{
+    ui->progressBar->setVisible(false);
+    ui->label_progress->setVisible(false);
+}
+
+void MainWindow::set_ProgressText(const MainViewModel::StringModel &m)
+{
+    ui->label_progress->setText(m.txt);
+}
+
+void MainWindow::set_ProgressLine(const MainViewModel::IntModel& m){
+    ui->progressBar->setValue(m.value);
+}

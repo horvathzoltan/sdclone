@@ -21,6 +21,10 @@ public:
         QString txt;
     };
 
+    struct IntModel{
+        int value;
+    };
+
     struct StringListModel{
         QStringList txts;
     };
@@ -57,6 +61,8 @@ public:
     public:
         void append(const WriteStatus&m ){_states.append(m);}
         QList<WriteStatus> states()const{return _states;}
+        void clear(){_states.clear();};
+        bool isEmpty(){return _states.isEmpty();}
     };
 };
 

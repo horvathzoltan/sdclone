@@ -114,45 +114,56 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(
     const QList<DeviceStorage::DeviceModel> &devices,
     const QString& usbRootPath)
 {
-    MainViewModel::DeviceListModel m;    
+    MainViewModel::DeviceListModel m;
 
-    for(auto&device:devices){
+    for (const DeviceStorage::DeviceModel &device : devices) {
         MainViewModel::DeviceModel d;
 
-        int ix = findFirstDiffPos(device.usbPath, usbRootPath);        
-        QString label = (ix<0)?device.usbPath:device.usbPath.mid(ix);
-        if(label.startsWith('.')) label = label.mid(1);
+        int ix = findFirstDiffPos(device.usbPath, usbRootPath);
+        QString label = (ix < 0) ? device.usbPath : device.usbPath.mid(ix);
+        if (label.startsWith('.'))
+            label = label.mid(1);
         ix = label.indexOf('_');
-        if(ix>0) label = label.left(ix);
+        if (ix > 0)
+            label = label.left(ix);
 
         d.deviceLabel = label;
         d.usbDevicePath = device.usbPath;
         d.devicePath = device.devPath;
-        //d.serial = device.serial;
+        // d.serial = device.serial;
         QString o;
-        QString s;
-        s+=device.usbPath;
-        for(auto&p:device.partitions){
+        //QString s;
+        //s += device.usbPath;
+        for (auto &p : device.partitions) {
             d.partitionLabels.append(p.toString());
-            s+="_"+p.label+"_"+p.project;
-            if(o.isEmpty()){
-                if(!p.project.isEmpty()){
+            //s += "_" + p.label + "_" + p.project;
+            if (o.isEmpty()) {
+                if (!p.project.isEmpty()) {
                     o = p.project;
-                } else{
+                } else {
                     o = p.label;
                 }
-            }                        
+            }
         }
         d.outputFileName = o;
-        d.serial = s;
+        d.serial = GetSerial(device);
 
         m.devices.append(d);
     }
     return m;
 }
 
-/*READ*/
+QString MainPresenter::GetSerial(const DeviceStorage::DeviceModel &device){
+    QString s;
+    s+=device.usbPath;
+    for(auto&p:device.partitions){
+        s+="_"+p.label+"_"+p.project;
+    }
+    return s;
+}
 
+// writing: xxx bytes (yy.0MB)
+/*READ*/
 void MainPresenter::stdErrReader(QByteArray&d)
 {
     _stdErr.append(d);
@@ -172,6 +183,150 @@ void MainPresenter::stdErrReader(QByteArray&d)
 
     if(!g.isEmpty()){
         _views[0]->set_StatusLine({g});
+    }
+
+    auto s = _presenterState.state();
+
+    if(s==PresenterState::Write){
+        if(!g.isEmpty()){
+
+            QStringList lines = g.split('\n');
+            for(auto&line:lines){
+                if(line.startsWith("writing:")){
+                    QStringList tokens = line.split(' ');
+                    if(tokens.length()>=4){
+                        bool ok;
+                        qlonglong i = tokens[1].toLongLong(&ok);
+                        if(ok){
+                            _writeBytesAll = i;
+                        }
+                    }
+                } else if(line.startsWith("cmd:dcfldd")){
+                    QStringList tokens = line.split(' ');
+                    for(auto&token:tokens){
+                        if(token.startsWith("bs=")){
+                            bool ok;
+                            int i2 = token.mid(3).toInt(&ok);
+                            if(ok){
+                                _writeBlockSize=i2;
+                            }
+                        }
+                    }
+                } else if(line.endsWith("written.")){
+                    QStringList tokens = line.split(' ');
+                    if(tokens[1]=="blocks"){
+                        bool ok;
+                        qlonglong blocks = tokens[0].toLongLong(&ok);
+                        if(ok){
+                            _writeBytes = blocks*_writeBlockSize;
+
+                            int percent = (50*_writeBytes)/_writeBytesAll;
+
+                            _views[0]->set_ProgressLine({percent});
+                            SetRemainingTime();
+                        }
+                    }
+                } else if(line.endsWith("MB/s")){
+                    QStringList tokens = line.split(' ');
+                    //if(tokens[1]=="blocks"){
+                        bool ok;
+                        qlonglong bytes = tokens[0].toLongLong(&ok);
+                        if(ok){
+                            _writeBytes2 = bytes;
+
+                            int percent = (50*(_writeBytes+_writeBytes2))/_writeBytesAll;
+
+                            _views[0]->set_ProgressLine({percent});
+                            SetRemainingTime();
+                        }
+                    //}
+                }
+            }
+        }
+    } else if(s==PresenterState::Read){
+        if(!g.isEmpty()){
+
+            QStringList lines = g.split('\n');
+            for(auto&line:lines){
+                if(line.startsWith("reading:")){
+                    QStringList tokens = line.split(' ');
+                    if(tokens.length()>=4){
+                        bool ok;
+                        qlonglong i = tokens[1].toLongLong(&ok);
+                        if(ok){
+                            _writeBytesAll = i;
+                            _writeBlockSize = 512;
+                        }
+                    }
+                } else if(line.startsWith("cmd:dcfldd")){
+                    // QStringList tokens = line.split(' ');
+                    // for(auto&token:tokens){
+                    //     if(token.startsWith("bs=")){
+                    //         bool ok;
+                    //         int i2 = token.mid(3).toInt(&ok);
+                    //         if(ok){
+                    //             _writeBlockSize=i2;
+                    //         }
+                    //     }
+                    // }
+                } else if(line.endsWith("written.")){
+                    // QStringList tokens = line.split(' ');
+                    // if(tokens[1]=="blocks"){
+                    //     bool ok;
+                    //     qlonglong blocks = tokens[0].toLongLong(&ok);
+                    //     if(ok){
+                    //         _writeBytes = blocks*_writeBlockSize;
+
+                    //         int percent = (50*_writeBytes)/_writeBytesAll;
+
+                    //         _views[0]->set_ProgressLine({percent});
+                    //     }
+                    // }
+                } else if(line.endsWith("MB/s")){
+                    QStringList tokens = line.split(' ');
+                    //if(tokens[1]=="blocks"){
+                    bool ok;
+                    qlonglong bytes = tokens[0].toLongLong(&ok);
+                    if(ok){
+                        if(bytes<_writeBytes)
+                            _writeBytes2 = bytes;
+                        else
+                            _writeBytes = bytes;
+
+                        int percent = (50*(_writeBytes+_writeBytes2))/_writeBytesAll;
+
+                        _views[0]->set_ProgressLine({percent});
+
+                        SetRemainingTime();
+                    }
+                    //}
+                }
+            }
+        }
+    }
+}
+
+void MainPresenter::SetRemainingTime(){
+    qint64 t = _writeTimer.elapsed()/1000;
+    if(t>0){
+        qreal bps = (_writeBytes+_writeBytes2)/(t);
+        qint64 remaining = (_writeBytesAll*2)-(_writeBytes+_writeBytes2);
+        int rt = remaining/bps;
+
+        QTime ts(0, 0, 0);
+        ts = ts.addSecs(rt);
+        QString t = ts.toString("hh:mm:ss");;
+        _views[0]->set_ProgressText({t});
+    }
+}
+
+void MainPresenter::SetTotalTime(){
+    qint64 t = _writeTimer.elapsed();
+    if(t>0){
+        QTime ts(0, 0, 0);
+        ts = ts.addMSecs(t);
+        QString t = ts.toString("hh:mm:ss");;
+        _views[0]->set_StatusLine({"total:"+t});
     }
 }
 
@@ -216,6 +371,13 @@ void MainPresenter::Read(){
     _views[0]->set_StatusLine({"processReadAction"});
     _views[0]->set_ClearDeviceWriteStates();
 
+    _writeBytesAll = 0;
+    _writeBlockSize = 0;
+    _writeBytes = 0;
+    _writeBytes2 = 0;
+    _writeTimer.restart();
+    _views[0]->set_ShowProgressbar();
+
     MainViewModel::DeviceModel a = _views[0]->get_Device();
 
     if(a.usbDevicePath.isEmpty()){
@@ -249,6 +411,14 @@ void MainPresenter::Write()
     qDebug() << "processWriteAction";
     _views[0]->set_StatusLine({"processWriteAction"});
     _views[0]->set_ClearDeviceWriteStates();
+    _wm.clear();
+
+    _writeBytesAll = 0;
+    _writeBlockSize = 0;
+    _writeBytes = 0;
+    _writeBytes2 = 0;
+    _writeTimer.restart();
+    _views[0]->set_ShowProgressbar();
 
     QString usbDevicePath = _deviceStorage.usbRootPath();
 
@@ -289,18 +459,17 @@ void MainPresenter::PollDevices()
 
 void MainPresenter::processInitFinished()
 {
-    QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
-    // itt kell a disk serial
-    // ami nincs benne a listboxban, és most van, azt bele kell tenni
-    // ami benne van a listboxban, és most nincs benne azt ki kell venni
-    // mi selected, azt uuid alapján selectelni kell - illetve az elvileg úgy fog magától maradni
-    //_views[0]->set_DeviceListClear();
+    QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();   
     if(devices.isEmpty()){
-        _views[0]->set_StatusLine({"usb devices not found"});
+        _views[0]->set_StatusLine({"usb devices not found"});        
     } else{
         MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices, _deviceStorage.usbRootPath());
         _views[0]->set_DeviceList(deviceListWm);
-        //_views[0]->set_ClearDeviceWriteStates();
+    }
+
+    if(!_wm.isEmpty()){
+        _views[0]->set_DeviceWriteStates(_wm);
+        _wm.clear();
     }
     _presenterState.handleInput(this,PresenterState::None);
 
@@ -313,9 +482,10 @@ void MainPresenter::Exit()
     QCoreApplication::quit();
 }
 
-void MainPresenter::ProcessWriteResult(){
-    MainViewModel::WriteStatusWM wm = _views[0]->getLastWriteStatus();
-    _views[0]->set_DeviceWriteStates(wm);
+void MainPresenter::ProcessWriteResult(){    
+    _wm = _views[0]->getLastWriteStatus();
+    _views[0]->set_DeviceListClear();
+    _presenterState.handleInput(this, PresenterState::PollDevices);
 }
 
 void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State input)
@@ -367,8 +537,10 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
         switch(input){
         case None:
             _state = None;                        
-            presenter->ProcessWriteResult();
             presenter->_views[0]->set_PresenterStatus({"None"});
+            presenter->_views[0]->set_HideProgressbar();
+            presenter->SetTotalTime();
+            presenter->ProcessWriteResult();
             break;
         default:break;
         }
@@ -378,6 +550,8 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
         case None:
             _state = None;
             presenter->_views[0]->set_PresenterStatus({"None"});
+            presenter->_views[0]->set_HideProgressbar();
+            presenter->SetTotalTime();
             break;
         default:break;
         }

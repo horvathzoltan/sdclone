@@ -22,8 +22,13 @@ public:
     virtual MainViewModel::WriteStatusWM getLastWriteStatus() = 0;
     virtual void set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m) = 0;
     virtual void set_ClearDeviceWriteStates() = 0;
+    virtual void set_ProgressLine(const MainViewModel::IntModel& m) = 0;
+    virtual void set_ShowProgressbar() = 0;
+    virtual void set_HideProgressbar() = 0;
+    virtual void set_ProgressText(const MainViewModel::StringModel& m) = 0;
 
     virtual MainViewModel::StringModel get_InputFileName() = 0;
+    virtual MainViewModel::IntModel get_WriteBytes() = 0;
 
     virtual MainViewModel::DeviceModel get_Device() = 0;
 

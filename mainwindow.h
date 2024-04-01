@@ -27,6 +27,11 @@ private:
     MainViewModel::WriteStatusWM getLastWriteStatus();
     void set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m);
     void set_ClearDeviceWriteStates();
+    void set_ProgressLine(const MainViewModel::IntModel& m);
+    MainViewModel::IntModel get_WriteBytes();
+    void set_ShowProgressbar();
+    void set_HideProgressbar();
+    void set_ProgressText(const MainViewModel::StringModel& m);
 
     MainViewModel::DeviceModel get_Device();
     MainViewModel::StringModel get_InputFileName();
