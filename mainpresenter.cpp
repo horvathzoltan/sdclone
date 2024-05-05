@@ -27,6 +27,11 @@ MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
         _presenterState.handleInput(this, PresenterState::PollDevices);
     });
 
+    // connect(&_imageFolderPollTimer, &QTimer::timeout, this, [this](){
+    //     _imagePollingCounter++;
+    //     _presenterState.handleInput(this, PresenterState::PollImages);
+    // });
+
     QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
                      this, SLOT(processInitFinished()));
 
@@ -60,6 +65,12 @@ void MainPresenter::initView(IMainView *w) {
 //    MainViewModel::DoWorkRModel rm{"1"};
 //    w->set_DoWorkRModel(rm);
 
+    RefreshImageFolder();
+    _presenterState.handleInput(this, PresenterState::PollDevices);
+    _devicePollTimer.start(5000);
+};
+
+void MainPresenter::RefreshImageFolder(){
     QString partLabel = "butyok2";
 
     _imageStorage.Init(partLabel);
@@ -67,36 +78,31 @@ void MainPresenter::initView(IMainView *w) {
     switch(_imageStorage.err()){
     case ImageStorage::OK:
     {
-        w->set_StatusLine({"mounted:"+partLabel+" to:"+_imageStorage.mountPoint()});
+        _views[0]->set_StatusLine({"mounted:"+partLabel+" to:"+_imageStorage.mountPoint()});
         QString imageFolder = "clone";
-        w->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
+        _views[0]->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
 
         _imageStorage.SetImageFilePath(imageFolder);
         QStringList e = _imageStorage.GetImageFilePaths();
         if(e.isEmpty()){
-            w->set_StatusLine({"images not found:"+imageFolder});
+            _views[0]->set_StatusLine({"images not found:"+imageFolder});
         } else{
-            w->set_ImageFileList({e});
+            _views[0]->set_ImageFileList({e});
         }
         break;
     }
     case ImageStorage::NoDevPath:
-        w->set_StatusLine({"device not found:"+partLabel});
-        w->set_StorageLabel({""});
-        w->set_ImageFileList({});
+        _views[0]->set_StatusLine({"device not found:"+partLabel});
+        _views[0]->set_StorageLabel({""});
+        _views[0]->set_ImageFileList({});
         break;
     case ImageStorage::CannotMount:
-        w->set_StatusLine({"cannot mount partition:"+partLabel+" to:"+_imageStorage.mountPoint()});
-        w->set_StorageLabel({""});
-        w->set_ImageFileList({});
+        _views[0]->set_StatusLine({"cannot mount partition:"+partLabel+" to:"+_imageStorage.mountPoint()});
+        _views[0]->set_StorageLabel({""});
+        _views[0]->set_ImageFileList({});
         break;
     }
-
-
-    _presenterState.handleInput(this, PresenterState::PollDevices);
-    _devicePollTimer.start(5000);
-};
-
+}
 
 //a = _deviceStorage.usbRootPath();
 
@@ -457,18 +463,24 @@ void MainPresenter::PollDevices()
     _deviceStorage.Init();
 }
 
+void MainPresenter::PollImages()
+{
+    //_deviceStorage.Init();
+}
+
 void MainPresenter::processInitFinished()
 {
     QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();   
     if(devices.isEmpty()){
-        _views[0]->set_StatusLine({"usb devices not found"});        
+        _views[0]->set_StatusLine({"usb devices not found"});
+        _views[0]->set_DeviceListClear();
     } else{
         MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices, _deviceStorage.usbRootPath());
         _views[0]->set_DeviceList(deviceListWm);
     }
 
     if(!_wm.isEmpty()){
-        _views[0]->set_DeviceWriteStates(_wm);
+        _views[0]->set_DeviceWriteStates(_wm);//beállítja a zöldet
         _wm.clear();
     }
     _presenterState.handleInput(this,PresenterState::None);
@@ -508,6 +520,11 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
             presenter->_views[0]->set_PresenterStatus({"PollDevices"});
             presenter->PollDevices();
             break;
+        case PollImages:
+            _state = input;
+            presenter->_views[0]->set_PresenterStatus({"PollImages"});
+            presenter->PollImages();
+            break;
         case Exit:
             _state = input;
             presenter->_views[0]->set_PresenterStatus({"Exit"});
@@ -516,6 +533,7 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
         default:break;
         }
         break;
+    case PollImages:
     case PollDevices:
         switch(input){
         case Write:

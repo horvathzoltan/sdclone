@@ -22,6 +22,7 @@ DeviceStorage::DeviceStorage(QObject *parent) :QObject(parent)
 
 void DeviceStorage::Init()
 {
+    if(_isInPolling) return;
     _isInPolling = true;
     _pollingCounter++;
 

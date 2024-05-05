@@ -49,18 +49,21 @@ private:
 
 
     QTimer _devicePollTimer;
+    QTimer _imageFolderPollTimer;
     //bool isFreeForOperation();
     quint32 _pollingCounter = 0;
+    quint32 _imagePollingCounter = 0;
 
     void Write();
     void Read();
     void PollDevices();
+    void PollImages();
     void Exit();
     void ProcessWriteResult();
 
     class PresenterState{
     public:
-        enum State:int{None=0,Write,Read,PollDevices,waitForWrite,waitForRead,Exit};
+        enum State:int{None=0,Write,Read,PollDevices,waitForWrite,waitForRead,Exit,PollImages};
 
         void handleInput(MainPresenter* presenter, State s);
         State state(){return _state;}
@@ -71,6 +74,7 @@ private:
 
     PresenterState _presenterState;
 
+    void RefreshImageFolder();
 private slots:
     void processReadAction(IMainView *sender);
     void processWriteAction(IMainView *sender);

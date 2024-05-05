@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 12.0.2, 2024-04-01T21:54:02. -->
+<!-- Written by QtCreator 13.0.0, 2024-05-05T10:52:53. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -267,6 +267,7 @@
      <value type="QString">XDG_RUNTIME_DIR=/home/pi/rt</value>
     </valuelist>
     <value type="bool" key="PE.EnvironmentAspect.PrintOnRun">false</value>
+    <value type="QString" key="PerfRecordArgsId">-e cpu-cycles --call-graph dwarf,4096 -F 250</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">sdclone (on %{Device:Name})</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">RemoteLinuxRunConfiguration:/home/zoli/source/repos/sdclone/sdclone.pro</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">/home/zoli/source/repos/sdclone/sdclone.pro</value>
@@ -436,6 +437,7 @@
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="bool" key="PE.EnvironmentAspect.PrintOnRun">false</value>
+    <value type="QString" key="PerfRecordArgsId">-e cpu-cycles --call-graph dwarf,4096 -F 250</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/zoli/source/repos/sdclone/sdclone.pro</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">/home/zoli/source/repos/sdclone/sdclone.pro</value>
