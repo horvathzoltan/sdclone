@@ -27,10 +27,10 @@ MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
         _presenterState.handleInput(this, PresenterState::PollDevices);
     });
 
-    // connect(&_imageFolderPollTimer, &QTimer::timeout, this, [this](){
-    //     _imagePollingCounter++;
-    //     _presenterState.handleInput(this, PresenterState::PollImages);
-    // });
+    connect(&_imageFolderPollTimer, &QTimer::timeout, this, [this](){
+         _imagePollingCounter++;
+         _presenterState.handleInput(this, PresenterState::PollImages);
+    });
 
     QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
                      this, SLOT(processInitFinished()));
@@ -65,14 +65,9 @@ void MainPresenter::initView(IMainView *w) {
 //    MainViewModel::DoWorkRModel rm{"1"};
 //    w->set_DoWorkRModel(rm);
 
-    RefreshImageFolder();
-    _presenterState.handleInput(this, PresenterState::PollDevices);
-    _devicePollTimer.start(5000);
-};
-
-void MainPresenter::RefreshImageFolder(){
+    //RefreshImageFolder();
+    //_presenterState.handleInput(this, PresenterState::PollImages);
     QString partLabel = "butyok2";
-
     _imageStorage.Init(partLabel);
 
     switch(_imageStorage.err()){
@@ -80,15 +75,8 @@ void MainPresenter::RefreshImageFolder(){
     {
         _views[0]->set_StatusLine({"mounted:"+partLabel+" to:"+_imageStorage.mountPoint()});
         QString imageFolder = "clone";
-        _views[0]->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
-
         _imageStorage.SetImageFilePath(imageFolder);
-        QStringList e = _imageStorage.GetImageFilePaths();
-        if(e.isEmpty()){
-            _views[0]->set_StatusLine({"images not found:"+imageFolder});
-        } else{
-            _views[0]->set_ImageFileList({e});
-        }
+        _views[0]->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
         break;
     }
     case ImageStorage::NoDevPath:
@@ -101,6 +89,39 @@ void MainPresenter::RefreshImageFolder(){
         _views[0]->set_StorageLabel({""});
         _views[0]->set_ImageFileList({});
         break;
+    }
+    _presenterState.handleInput(this, PresenterState::PollDevices);
+    _devicePollTimer.start(5000);
+    _imageFolderPollTimer.start(4000);
+};
+
+void MainPresenter::RefreshImageFolder(){
+
+    //QString partLabel = _imageStorage.partLabel();
+    QString imageFolder = _imageStorage.imageFolder();
+    switch(_imageStorage.err()){
+    case ImageStorage::OK:
+    {        
+        QStringList e = _imageStorage.GetImageFilePaths();
+        if(e.isEmpty()){
+            _views[0]->set_StatusLine({"images not found:"+imageFolder});
+            _views[0]->set_ClearImageFileList();
+        } else{
+            _views[0]->set_ImageFileList({e});
+        }
+        break;
+    }
+    default:break;
+    // case ImageStorage::NoDevPath:
+    //     _views[0]->set_StatusLine({"device not found:"+partLabel});
+    //     _views[0]->set_StorageLabel({""});
+    //     _views[0]->set_ImageFileList({});
+    //     break;
+    // case ImageStorage::CannotMount:
+    //     _views[0]->set_StatusLine({"cannot mount partition:"+partLabel+" to:"+_imageStorage.mountPoint()});
+    //     _views[0]->set_StorageLabel({""});
+    //     _views[0]->set_ImageFileList({});
+    //     break;
     }
 }
 
@@ -465,6 +486,8 @@ void MainPresenter::PollDevices()
 
 void MainPresenter::PollImages()
 {
+    RefreshImageFolder();
+    _presenterState.handleInput(this,PresenterState::None);
     //_deviceStorage.Init();
 }
 

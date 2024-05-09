@@ -22,6 +22,7 @@ private:
     void set_PresenterStatus(const MainViewModel::StringModel& m);
     void set_StorageLabel(const MainViewModel::StringModel& m);
     void set_ImageFileList(const MainViewModel::StringListModel& m);
+    void set_ClearImageFileList();
     void set_DeviceList(const MainViewModel::DeviceListModel& m);
     void set_DeviceListClear();
     MainViewModel::WriteStatusWM getLastWriteStatus();

@@ -20,7 +20,9 @@ private:
     Error _err;
     QStringList _imageFilePaths;
     QString _imageFolder;
+    QString _partLabel;
 public:
+    QString partLabel(){return _partLabel;}
     QString devPath(){return _devPath;}
     QString imageFolder(){return _imageFolder;}
     bool isMounted(){ return !_mountPoint.isEmpty();}

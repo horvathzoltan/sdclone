@@ -133,10 +133,37 @@ void MainWindow::set_StorageLabel(const MainViewModel::StringModel &m)
 
 void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
 {
-    ui->listWidget_images->clear();
-    if(!m.txts.isEmpty()){
+    QList<QListWidgetItem*> itemsToDelete;
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_images->item(row);
+        if(!m.txts.contains(item->text())){
+            itemsToDelete.append(item);
+        }
+    }
+
+    QStringList itemsToAdd;
+    for(auto&a:m.txts){
+        auto items = ui->listWidget_images->findItems(a, Qt::MatchFlag::MatchExactly);
+        if(items.isEmpty()){
+            // nincs benne a listába, bele kell majd tenni
+            itemsToAdd.append(a);
+        }
+    }
+    if(!itemsToDelete.isEmpty()){
+        for(QListWidgetItem* item:itemsToDelete){
+            auto row = ui->listWidget_images->row(item);
+            ui->listWidget_images->takeItem(row);
+        }
+    }
+    if(!itemsToAdd.isEmpty()){
         ui->listWidget_images->addItems(m.txts);
     }
+
+}
+
+void MainWindow::set_ClearImageFileList()
+{
+    ui->listWidget_images->clear();
 }
 
 void MainWindow::set_DeviceWriteStates(const MainViewModel::WriteStatusWM& m) {
@@ -173,8 +200,8 @@ void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
     if(lock) return;
     lock = true;
     //set_StatusLine({"set_DeviceList"});
-    //QList<QListWidgetItem*> itemsToDelete;
-    QList<int> rowToDelete;
+
+    QList<QListWidgetItem*> itemsToDelete;
 
     for(int row = 0; row < ui->listWidget_devices->count(); row++){
         QListWidgetItem *item = ui->listWidget_devices->item(row);
@@ -183,15 +210,15 @@ void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
             bool contains = m.containsBySerial(w->_serial);
 
             if(!contains){
-                //itemsToDelete.append(item);
-                set_StatusLine({"remove device:"+w->_usbDevicePath});
-                rowToDelete.append(row);
+                itemsToDelete.append(item);
+                set_StatusLine({"remove device:"+w->_usbDevicePath});                
             }
         }
     }
 
-    for (int row : rowToDelete) {
-        QListWidgetItem *item = ui->listWidget_devices->takeItem(row);
+    for (QListWidgetItem* item : itemsToDelete) {
+        int row = ui->listWidget_devices->row(item);
+        ui->listWidget_devices->takeItem(row);
         DeviceWidget *w = (DeviceWidget *)(ui->listWidget_devices->itemWidget(item));        
 
         ui->listWidget_devices->removeItemWidget(item);

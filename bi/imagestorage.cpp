@@ -7,6 +7,8 @@
 ImageStorage::ImageStorage() {}
 
 void ImageStorage::Init(const QString& partLabel){
+    _partLabel = partLabel;
+
     _devPath = BlockDeviceHelper::GetByLabel(partLabel);
     if(!_devPath.isEmpty())
     {
