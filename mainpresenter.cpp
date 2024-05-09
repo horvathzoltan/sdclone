@@ -92,7 +92,7 @@ void MainPresenter::initView(IMainView *w) {
     }
     _presenterState.handleInput(this, PresenterState::PollDevices);
     _devicePollTimer.start(5000);
-    _imageFolderPollTimer.start(4000);
+    _imageFolderPollTimer.start(9000);
 };
 
 void MainPresenter::RefreshImageFolder(){

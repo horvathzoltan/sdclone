@@ -136,8 +136,10 @@ void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
     QList<QListWidgetItem*> itemsToDelete;
     for(int row = 0; row < ui->listWidget_devices->count(); row++){
         QListWidgetItem *item = ui->listWidget_images->item(row);
-        if(!m.txts.contains(item->text())){
-            itemsToDelete.append(item);
+        if(item){
+            if(!m.txts.contains(item->text())){
+                itemsToDelete.append(item);
+            }
         }
     }
 
@@ -205,13 +207,15 @@ void MainWindow::set_DeviceList(const MainViewModel::DeviceListModel &m)
 
     for(int row = 0; row < ui->listWidget_devices->count(); row++){
         QListWidgetItem *item = ui->listWidget_devices->item(row);
-        DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));        
-        if(w){
-            bool contains = m.containsBySerial(w->_serial);
+        if(item){
+            DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+            if(w){
+                bool contains = m.containsBySerial(w->_serial);
 
-            if(!contains){
-                itemsToDelete.append(item);
-                set_StatusLine({"remove device:"+w->_usbDevicePath});                
+                if(!contains){
+                    itemsToDelete.append(item);
+                    set_StatusLine({"remove device:"+w->_usbDevicePath});
+                }
             }
         }
     }
