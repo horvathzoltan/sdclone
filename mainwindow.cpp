@@ -134,7 +134,7 @@ void MainWindow::set_StorageLabel(const MainViewModel::StringModel &m)
 void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
 {
     QList<QListWidgetItem*> itemsToDelete;
-    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+    for(int row = 0; row < ui->listWidget_images->count(); row++){
         QListWidgetItem *item = ui->listWidget_images->item(row);
         if(item){
             if(!m.txts.contains(item->text())){
@@ -158,7 +158,7 @@ void MainWindow::set_ImageFileList(const MainViewModel::StringListModel& m)
         }
     }
     if(!itemsToAdd.isEmpty()){
-        ui->listWidget_images->addItems(m.txts);
+        ui->listWidget_images->addItems(itemsToAdd);
     }
 
 }
