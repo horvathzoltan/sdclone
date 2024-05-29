@@ -5,6 +5,7 @@
 //#include "updates.h"
 
 #include <QElapsedTimer>
+#include <QFileSystemWatcher>
 #include <QList>
 #include <QObject>
 #include <QTimer>
@@ -48,8 +49,8 @@ private:
     static QString GetSerial(const DeviceStorage::DeviceModel &device);
 
 
-    QTimer _devicePollTimer;
-    QTimer _imageFolderPollTimer;
+    //QTimer _devicePollTimer;
+    //QTimer _imageFolderPollTimer;
     //bool isFreeForOperation();
     quint32 _pollingCounter = 0;
     quint32 _imagePollingCounter = 0;
@@ -63,7 +64,7 @@ private:
 
     class PresenterState{
     public:
-        enum State:int{None=0,Write,Read,PollDevices,waitForWrite,waitForRead,Exit,PollImages};
+        enum State:int{None=0,Write,Read,waitForWrite,waitForRead,Exit};//,PollImages,PollDevices
 
         void handleInput(MainPresenter* presenter, State s);
         State state(){return _state;}
@@ -75,6 +76,9 @@ private:
     PresenterState _presenterState;
 
     void RefreshImageFolder();
+    QFileSystemWatcher watcher_images;
+    QFileSystemWatcher watcher_devices;
+
 private slots:
     void processReadAction(IMainView *sender);
     void processWriteAction(IMainView *sender);

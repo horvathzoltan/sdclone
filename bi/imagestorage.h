@@ -30,6 +30,7 @@ public:
     QStringList imageFilePaths(){return _imageFilePaths;}
 
     QString mountPoint(){return _mountPoint;}
+
     QString GetFolder(const QString& dir){
         return FileNameHelper::Combine(_mountPoint, dir);
     }

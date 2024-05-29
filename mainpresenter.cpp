@@ -22,15 +22,15 @@ extern ProcessHelper _processHelper;
 
 MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
 {
-    connect(&_devicePollTimer, &QTimer::timeout, this, [this](){
-        _pollingCounter++;
-        _presenterState.handleInput(this, PresenterState::PollDevices);
-    });
+    // connect(&_devicePollTimer, &QTimer::timeout, this, [this](){
+    //     _pollingCounter++;
+    //     _presenterState.handleInput(this, PresenterState::PollDevices);
+    // });
 
-    connect(&_imageFolderPollTimer, &QTimer::timeout, this, [this](){
+/*    connect(&_imageFolderPollTimer, &QTimer::timeout, this, [this](){
          _imagePollingCounter++;
          _presenterState.handleInput(this, PresenterState::PollImages);
-    });
+    });*/
 
     QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
                      this, SLOT(processInitFinished()));
@@ -73,10 +73,17 @@ void MainPresenter::initView(IMainView *w) {
     switch(_imageStorage.err()){
     case ImageStorage::OK:
     {
-        _views[0]->set_StatusLine({"mounted:"+partLabel+" to:"+_imageStorage.mountPoint()});
+        auto mountpoint = _imageStorage.mountPoint();
+        _views[0]->set_StatusLine({"mounted:"+partLabel+" to:"+mountpoint});
         QString imageFolder = "clone";
         _imageStorage.SetImageFilePath(imageFolder);
-        _views[0]->set_StorageLabel({imageFolder+"@"+_imageStorage.mountPoint()});
+        _views[0]->set_StorageLabel({imageFolder+"@"+mountpoint});
+
+        PollImages();
+
+        auto i2mageFolder = _imageStorage.imageFolder();
+        watcher_images.addPath(i2mageFolder);
+        QObject::connect(&watcher_images, &QFileSystemWatcher::directoryChanged, [this](){PollImages();});
         break;
     }
     case ImageStorage::NoDevPath:
@@ -90,9 +97,14 @@ void MainPresenter::initView(IMainView *w) {
         _views[0]->set_ImageFileList({});
         break;
     }
-    _presenterState.handleInput(this, PresenterState::PollDevices);
-    _devicePollTimer.start(5000);
-    _imageFolderPollTimer.start(9000);
+    //_presenterState.handleInput(this, PresenterState::PollDevices);
+    //_devicePollTimer.start(5000);
+    //_imageFolderPollTimer.start(9000);
+
+    PollDevices();
+
+    watcher_devices.addPath("/dev/");
+    QObject::connect(&watcher_devices, &QFileSystemWatcher::directoryChanged, [this](){PollDevices();});
 };
 
 void MainPresenter::RefreshImageFolder(){
@@ -479,8 +491,33 @@ void MainPresenter::Write()
     _processHelper.ShellExecuteSudoNoWait(cmd);
 }
 
+/*
+pi@raspberrypi:~ $ ls /dev/sd*
+/dev/sda  /dev/sda1  /dev/sdb  /dev/sdb1  /dev/sdc  /dev/sdd
+pi@raspberrypi:~ $ ls /dev/sd*
+/dev/sda  /dev/sda1  /dev/sdb  /dev/sdc  /dev/sdd
+pi@raspberrypi:~ $ ls /dev/sd*
+/dev/sda  /dev/sda1  /dev/sdc  /dev/sdd
+pi@raspberrypi:~ $ ls /dev/sd*
+/dev/sda  /dev/sda1  /dev/sdb  /dev/sdb1  /dev/sdc  /dev/sdd
+pi@raspberrypi:~ $
+ */
+
+// DeviceModel.devPath alapján:
+// amit törölni kell töröljük
+// amit hozzá kell adni, azt átadjuk
+// _deviceStorage.Init(devicesToAdd);
+//
+// a readsd módosítani:
+// csak azokat vizsgálja meg, amiket átadtunk
+//
+// viewben kell:
+// device_remove
+// device_add
+// _deviceStorage-ben csak az lesz benne, amit lekérdeztünk???
 void MainPresenter::PollDevices()
 {
+
     _deviceStorage.Init();
 }
 
@@ -520,7 +557,8 @@ void MainPresenter::Exit()
 void MainPresenter::ProcessWriteResult(){    
     _wm = _views[0]->getLastWriteStatus();
     _views[0]->set_DeviceListClear();
-    _presenterState.handleInput(this, PresenterState::PollDevices);
+    //_presenterState.handleInput(this, PresenterState::PollDevices);
+    PollDevices();
 }
 
 void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State input)
@@ -538,16 +576,16 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
             presenter->_views[0]->set_PresenterStatus({"Read"});
             presenter->Read();
             break;
-        case PollDevices:
-            _state = input;
-            presenter->_views[0]->set_PresenterStatus({"PollDevices"});
-            presenter->PollDevices();
-            break;
-        case PollImages:
-            _state = input;
-            presenter->_views[0]->set_PresenterStatus({"PollImages"});
-            presenter->PollImages();
-            break;
+        // case PollDevices:
+        //     _state = input;
+        //     presenter->_views[0]->set_PresenterStatus({"PollDevices"});
+        //     presenter->PollDevices();
+        //     break;
+        // case PollImages:
+        //     _state = input;
+        //     presenter->_views[0]->set_PresenterStatus({"PollImages"});
+        //     presenter->PollImages();
+        //     break;
         case Exit:
             _state = input;
             presenter->_views[0]->set_PresenterStatus({"Exit"});
@@ -556,24 +594,24 @@ void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State 
         default:break;
         }
         break;
-    case PollImages:
-    case PollDevices:
-        switch(input){
-        case Write:
-            _state = waitForWrite;
-            presenter->_views[0]->set_PresenterStatus({"waitForWrite"});
-            break;
-        case Read:
-            _state = waitForRead;
-            presenter->_views[0]->set_PresenterStatus({"waitForRead"});
-            break;
-        case None:
-            _state = None;
-            presenter->_views[0]->set_PresenterStatus({"None"});
-            break;
-        default:break;
-        }
-        break;
+    //case PollImages:
+    // case PollDevices:
+    //     switch(input){
+    //     case Write:
+    //         _state = waitForWrite;
+    //         presenter->_views[0]->set_PresenterStatus({"waitForWrite"});
+    //         break;
+    //     case Read:
+    //         _state = waitForRead;
+    //         presenter->_views[0]->set_PresenterStatus({"waitForRead"});
+    //         break;
+    //     case None:
+    //         _state = None;
+    //         presenter->_views[0]->set_PresenterStatus({"None"});
+    //         break;
+    //     default:break;
+    //     }
+    //     break;
     case Write:
         switch(input){
         case None:
