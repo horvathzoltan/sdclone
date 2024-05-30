@@ -32,6 +32,7 @@ public:
     virtual MainViewModel::IntModel get_WriteBytes() = 0;
 
     virtual MainViewModel::DeviceModel get_Device() = 0;
+    virtual MainViewModel::DeviceListModel get_DeviceList() = 0;
 
 public: // signals
     virtual void ReadActionTriggered(IMainView *sender) = 0;

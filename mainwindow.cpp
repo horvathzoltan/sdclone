@@ -282,6 +282,26 @@ MainViewModel::DeviceModel MainWindow::get_Device()
     return d;
 }
 
+MainViewModel::DeviceListModel MainWindow::get_DeviceList()
+{
+    MainViewModel::DeviceListModel d;
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+        if(w){
+            MainViewModel::DeviceModel m;
+
+            m.devicePath = w->_devicePath;
+            //m.usbDevicePath = w->_usbDevicePath;
+            //m.outputFileName = w->_outputFileName;
+            m.row = row;
+
+            d.devices.append(m);
+        }
+    }
+    return d;
+}
+
 DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::DeviceModel& device, const QSize& s)
 {
     int width = s.width()-16;
@@ -370,6 +390,7 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
 
     w->setStatusLabel(l0);
     w->setLabelLabel(l1);
+    w->_devicePath = device.devicePath;
     w->_usbDevicePath = device.usbDevicePath;
     w->_outputFileName = device.outputFileName;
     w->_serial = device.serial;

@@ -35,6 +35,8 @@ private:
     void set_ProgressText(const MainViewModel::StringModel& m);
 
     MainViewModel::DeviceModel get_Device();
+    MainViewModel::DeviceListModel get_DeviceList();
+
     MainViewModel::StringModel get_InputFileName();
 
     void SetDeviceWriteState(const MainViewModel::WriteStatus& m);

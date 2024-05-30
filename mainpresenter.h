@@ -57,6 +57,18 @@ private:
 
     void Write();
     void Read();
+    // DeviceModel.devPath alapján:
+    // amit törölni kell töröljük
+    // amit hozzá kell adni, azt átadjuk
+    // _deviceStorage.Init(devicesToAdd);
+    //
+    // a readsd módosítani:
+    // csak azokat vizsgálja meg, amiket átadtunk
+    //
+    // viewben kell:
+    // device_remove
+    // device_add
+    // _deviceStorage-ben csak az lesz benne, amit lekérdeztünk???
     void PollDevices();
     void PollImages();
     void Exit();

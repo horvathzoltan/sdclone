@@ -16,6 +16,7 @@
 
 #include <bi/imagestorage.h>
 
+#include <helpers/filehelper.h>
 #include <helpers/processhelper.h>
 
 extern ProcessHelper _processHelper;
@@ -503,21 +504,14 @@ pi@raspberrypi:~ $ ls /dev/sd*
 pi@raspberrypi:~ $
  */
 
-// DeviceModel.devPath alapján:
-// amit törölni kell töröljük
-// amit hozzá kell adni, azt átadjuk
-// _deviceStorage.Init(devicesToAdd);
-//
-// a readsd módosítani:
-// csak azokat vizsgálja meg, amiket átadtunk
-//
-// viewben kell:
-// device_remove
-// device_add
-// _deviceStorage-ben csak az lesz benne, amit lekérdeztünk???
+// /sys/block/sdc - size 0:nincs kártya
+// udevadm info --query=property --path=/sys/block/sdc
 void MainPresenter::PollDevices()
 {
+   /* auto fileInfoList = FileHelper::GetSystemFiles("/dev/disk/by-path", {});
+    QStringList a = FileHelper::GetRootList(fileInfoList, "usb-0:1.2");
 
+    auto b = _views[0]->get_DeviceList();*/
     _deviceStorage.Init();
 }
 

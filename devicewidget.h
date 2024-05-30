@@ -17,6 +17,7 @@ public:
     QString _usbDevicePath;
     QString _outputFileName;
     QString _serial;
+    QString _devicePath;
 
     DeviceWidget();
 

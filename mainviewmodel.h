@@ -36,6 +36,7 @@ public:
         QString serial;
         QString outputFileName;
         QStringList partitionLabels;
+        int row;
     };
 
     struct DeviceListModel{
