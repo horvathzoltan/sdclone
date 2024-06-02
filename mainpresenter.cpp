@@ -109,16 +109,11 @@ void MainPresenter::initView(IMainView *w) {
     //qw = new QDeviceWatcher;
 
     qw.appendEventReceiver(this);
-    // QObject::connect(&qw,
-    //                  &QDeviceWatcher::deviceAdded,
-    //                  [this](){
-    //                      _views[0]->set_StatusLine({"New device:" });
-    //                  });
     QObject::connect(&qw,
-                     SIGNAL(deviceAdded(QString)),
-                     this,
-                     SLOT(slotDeviceAdded(QString)),
-                     Qt::DirectConnection);
+            SIGNAL(deviceAdded(QString)),
+            this,
+            SLOT(slotDeviceAdded(QString)),
+            Qt::DirectConnection);
     QObject::connect(&qw,
             SIGNAL(deviceChanged(QString)),
             this,
@@ -129,8 +124,6 @@ void MainPresenter::initView(IMainView *w) {
             this,
             SLOT(slotDeviceRemoved(QString)),
             Qt::DirectConnection);
-
-
     qw.start();
 };
 
