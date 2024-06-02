@@ -30,6 +30,8 @@ SOURCES += \
     helpers/filenamehelper.cpp \
     helpers/mounthelper.cpp \
     helpers/processhelper.cpp \
+    helpers/qdevicewatcher.cpp \
+    helpers/qdevicewatcher_linux.cpp \
     main.cpp \
     mainpresenter.cpp \
     mainwindow.cpp
@@ -48,6 +50,8 @@ HEADERS += \
     helpers/filenamehelper.h \
     helpers/mounthelper.h \
     helpers/processhelper.h \
+    helpers/qdevicewatcher.h \
+    helpers/qdevicewatcher_p.h \
     imainview.h \
     mainpresenter.h \
     mainviewmodel.h \

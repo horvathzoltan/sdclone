@@ -102,11 +102,78 @@ void MainPresenter::initView(IMainView *w) {
     //_devicePollTimer.start(5000);
     //_imageFolderPollTimer.start(9000);
 
-    PollDevices();
+    //PollDevices();
 
-    watcher_devices.addPath("/dev/");
-    QObject::connect(&watcher_devices, &QFileSystemWatcher::directoryChanged, [this](){PollDevices();});
+    //watcher_devices.addPath("/dev/");
+    //QObject::connect(&watcher_devices, &QFileSystemWatcher::directoryChanged, [this](){PollDevices();});
+    qw = new QDeviceWatcher;
+
+    qw->appendEventReceiver(this);
+    // QObject::connect(&qw,
+    //                  &QDeviceWatcher::deviceAdded,
+    //                  [this](){
+    //                      _views[0]->set_StatusLine({"New device:" });
+    //                  });
+    QObject::connect(qw,
+                     SIGNAL(deviceAdded(QString)),
+                     this,
+                     SLOT(slotDeviceAdded(QString)),
+                     Qt::DirectConnection);
+    QObject::connect(qw,
+            SIGNAL(deviceChanged(QString)),
+            this,
+            SLOT(slotDeviceChanged(QString)),
+            Qt::DirectConnection);
+    QObject::connect(qw,
+            SIGNAL(deviceRemoved(QString)),
+            this,
+            SLOT(slotDeviceRemoved(QString)),
+            Qt::DirectConnection);
+
+
+    qw->start();
 };
+
+void MainPresenter::slotDeviceAdded(const QString& dev)
+{
+    //qDebug("tid=%#x: add %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
+
+    //state->setText("<font color=#0000ff>Add: </font>" + dev);
+    _views[0]->set_StatusLine({"New device:" +dev});
+}
+
+void MainPresenter::slotDeviceChanged(const QString& dev)
+{
+    //qDebug("tid=%#x: change %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
+
+    //state->setText("<font color=#0000ff>Change: </font>" + dev);
+    _views[0]->set_StatusLine({"Change device:"+ dev});
+}
+
+void MainPresenter::slotDeviceRemoved(const QString& dev)
+{
+    //qDebug("tid=%#x: remove %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
+
+    //state->setText("<font color=#0000ff>Remove: </font>" + dev);
+    _views[0]->set_StatusLine({"Remove device:"+ dev});
+}
+
+void MainPresenter::processWriteAction(IMainView *sender)
+{
+    _presenterState.handleInput(this, PresenterState::Write);
+}
+
+void MainPresenter::processReadAction(IMainView *sender)
+{
+    _presenterState.handleInput(this, PresenterState::Read);
+}
+
+void MainPresenter::processExitAction(IMainView *sender)
+{
+    _presenterState.handleInput(this, PresenterState::Exit);
+}
+
+
 
 void MainPresenter::RefreshImageFolder(){
 
@@ -391,20 +458,6 @@ void MainPresenter::finished()
 /*WRITE*/
 //./writesd2 -p /media/pi/butyok2/clone/ -i img57 -s Aladar123 -f -u 1-1.2
 
-void MainPresenter::processWriteAction(IMainView *sender)
-{    
-    _presenterState.handleInput(this, PresenterState::Write);
-}
-
-void MainPresenter::processReadAction(IMainView *sender)
-{
-    _presenterState.handleInput(this, PresenterState::Read);
-}
-
-void MainPresenter::processExitAction(IMainView *sender)
-{
-    _presenterState.handleInput(this, PresenterState::Exit);
-}
 
 void MainPresenter::Read(){
     qDebug() << "processReadAction";
@@ -514,6 +567,7 @@ void MainPresenter::PollDevices()
     auto b = _views[0]->get_DeviceList();*/
     _deviceStorage.Init();
 }
+
 
 void MainPresenter::PollImages()
 {

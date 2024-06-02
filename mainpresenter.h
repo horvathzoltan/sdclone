@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <bi/devicestorage.h>
 #include <bi/imagestorage.h>
+#include <helpers/qdevicewatcher.h>
 #include "imainview.h"
 
 class IMainView;
@@ -52,6 +53,7 @@ private:
     //QTimer _devicePollTimer;
     //QTimer _imageFolderPollTimer;
     //bool isFreeForOperation();
+    QDeviceWatcher *qw;
     quint32 _pollingCounter = 0;
     quint32 _imagePollingCounter = 0;
 
@@ -98,7 +100,11 @@ private slots:
     void processExitAction(IMainView *sender);
 public slots:
     void stdErrReader(QByteArray&d);
-    void finished();    
+    void finished();
+
+    void slotDeviceAdded(const QString& dev);
+    void slotDeviceRemoved(const QString& dev);
+    void slotDeviceChanged(const QString& dev);
 };
 
 #endif // MAINPRESENTER_H
