@@ -28,6 +28,7 @@ public:
         QString devPath;
         QString usbPath;
         QString serial;
+        quint64 size;
 
         QList<PartitionModel> partitions;
 
@@ -48,9 +49,11 @@ public:
     QList<DeviceModel> devices(){return _devices;}
     //DeviceStorage();
     void Init();
+    void Init2();
     QString usbRootPath();
     bool IsInPolling(){return _isInPolling;}
 
+    int GetSize(const QString &d);
 signals:
     void initFinished();
 

@@ -1,7 +1,9 @@
 #include "devicestorage.h"
 
+#include <helpers/filehelper.h>
 #include <helpers/processhelper.h>
 
+#include <QDir>
 #include <QElapsedTimer>
 
 extern ProcessHelper _processHelper;
@@ -20,11 +22,66 @@ DeviceStorage::DeviceStorage(QObject *parent) :QObject(parent)
 //                      this, &DeviceStorage::finished);
 // }
 
+void DeviceStorage::Init2(){
+    auto fileInfoList = FileHelper::GetSystemFiles("/dev/disk/by-path", {});
+    //QStringList devicePaths = FileHelper::GetRootList(fileInfoList, "usb-0:1.2");
+
+    _devices.clear();
+    _usbRootPath = "";
+    QString filter = "usb-0:1.2";
+    for(auto&fi:fileInfoList){
+        QString fileName = fi.fileName();
+        if(!fileName.contains(filter)) continue;
+        auto target = fi.symLinkTarget();
+        int L = target.length();
+        QChar l = target.at(L-1);
+        if(l.isDigit()) continue;
+
+        QStringList tokens = fileName.split('-');
+        if(tokens.length()<6) continue;
+        DeviceModel device;// = DeviceModel::Parse(l);
+        device.devPath = target;
+        device.usbPath = tokens[5];//.replace(':','_');
+
+        QFileInfo ff(target);
+
+        auto s = ff.fileName();
+        device.size = GetSize(s);
+
+        _devices.append(device);
+    }
+
+    emit initFinished();
+    _isInPolling = false;
+}
+
+int DeviceStorage::GetSize(const QString& d){
+    QFile f("/sys/block/"+d+"/size");
+    f.open(QFile::OpenModeFlag::ReadOnly);
+    QFile::FileError err = f.error();
+    if(err!=QFile::FileError::NoError) return 0;
+    QByteArray b = f.readLine();
+    err = f.error();
+    if(err!=QFile::FileError::NoError) return 0;
+    f.close();
+
+    auto es = f.errorString();
+    if(!b.isEmpty()){
+        bool ok;
+        QString c(b);
+        quint64 r = c.toULong(&ok);
+        if(ok){
+            return r;
+        }
+    }
+    return 0;
+}
+
 void DeviceStorage::Init()
 {
     if(_isInPolling) return;
     _isInPolling = true;
-    _pollingCounter++;
+    _pollingCounter++;    
 
     QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -q -s Aladar123");
     _pollingProcessHelper.ShellExecuteNoWait(cmd);
@@ -77,6 +134,7 @@ DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
         .devPath=words0[1],
         .usbPath=words0[2],
         .serial=words0[3],
+            .size = 0,
         .partitions = {}
     };
 

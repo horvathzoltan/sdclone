@@ -224,6 +224,7 @@ bool QDeviceWatcherPrivate::init()
 
 void QDeviceWatcherPrivate::parseLine(const QByteArray &line)
 {
+    QString hutty(line);
     zDebug("%s", line.constData());
 #define USE_REGEXP 0
 #if USE_REGEXP

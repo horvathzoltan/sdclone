@@ -103,10 +103,7 @@ void MainPresenter::initView(IMainView *w) {
     //_imageFolderPollTimer.start(9000);
 
     //PollDevices();
-
-    //watcher_devices.addPath("/dev/");
-    //QObject::connect(&watcher_devices, &QFileSystemWatcher::directoryChanged, [this](){PollDevices();});
-    //qw = new QDeviceWatcher;
+    _deviceStorage.Init2();
 
     qw.appendEventReceiver(this);
     QObject::connect(&qw,
