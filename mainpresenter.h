@@ -53,7 +53,7 @@ private:
     //QTimer _devicePollTimer;
     //QTimer _imageFolderPollTimer;
     //bool isFreeForOperation();
-    QDeviceWatcher *qw;
+    QDeviceWatcher qw;
     quint32 _pollingCounter = 0;
     quint32 _imagePollingCounter = 0;
 

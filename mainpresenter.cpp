@@ -106,32 +106,32 @@ void MainPresenter::initView(IMainView *w) {
 
     //watcher_devices.addPath("/dev/");
     //QObject::connect(&watcher_devices, &QFileSystemWatcher::directoryChanged, [this](){PollDevices();});
-    qw = new QDeviceWatcher;
+    //qw = new QDeviceWatcher;
 
-    qw->appendEventReceiver(this);
+    qw.appendEventReceiver(this);
     // QObject::connect(&qw,
     //                  &QDeviceWatcher::deviceAdded,
     //                  [this](){
     //                      _views[0]->set_StatusLine({"New device:" });
     //                  });
-    QObject::connect(qw,
+    QObject::connect(&qw,
                      SIGNAL(deviceAdded(QString)),
                      this,
                      SLOT(slotDeviceAdded(QString)),
                      Qt::DirectConnection);
-    QObject::connect(qw,
+    QObject::connect(&qw,
             SIGNAL(deviceChanged(QString)),
             this,
             SLOT(slotDeviceChanged(QString)),
             Qt::DirectConnection);
-    QObject::connect(qw,
+    QObject::connect(&qw,
             SIGNAL(deviceRemoved(QString)),
             this,
             SLOT(slotDeviceRemoved(QString)),
             Qt::DirectConnection);
 
 
-    qw->start();
+    qw.start();
 };
 
 void MainPresenter::slotDeviceAdded(const QString& dev)
