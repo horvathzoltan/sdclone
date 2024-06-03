@@ -27,7 +27,7 @@ public:
     struct DeviceModel{
         QString devPath;
         QString usbPath;
-        QString serial;
+        //QString serial;
         quint64 size;
 
         QList<PartitionModel> partitions;
@@ -36,6 +36,8 @@ public:
         
         QString toString();
         QString usbRootPath();
+
+        QString serial() const;
     };
 private:
     QList<DeviceModel> _devices;
@@ -45,13 +47,20 @@ private:
     bool _isInPolling=false;
     QString _usbRootPath;
 
+    void GetPartitionData(DeviceModel *);
+
+
+    int indexOf(const QString& devPath);
 public:
+    void Remove(const QString& devPath);
     QList<DeviceModel> devices(){return _devices;}
     //DeviceStorage();
     void Init();
     void Init2();
     QString usbRootPath();
     bool IsInPolling(){return _isInPolling;}
+
+
 
     int GetSize(const QString &d);
 signals:

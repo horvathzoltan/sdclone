@@ -130,6 +130,7 @@ void MainPresenter::slotDeviceAdded(const QString& dev)
 
     //state->setText("<font color=#0000ff>Add: </font>" + dev);
     _views[0]->set_StatusLine({"New device:" +dev});
+
 }
 
 void MainPresenter::slotDeviceChanged(const QString& dev)
@@ -145,6 +146,8 @@ void MainPresenter::slotDeviceRemoved(const QString& dev)
     //qDebug("tid=%#x: remove %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
 
     //state->setText("<font color=#0000ff>Remove: </font>" + dev);
+    _deviceStorage.Remove(dev);
+    _views[0]->set_RemoveDevice({dev});
     _views[0]->set_StatusLine({"Remove device:"+ dev});
 }
 
@@ -218,11 +221,16 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(
 
         int ix = findFirstDiffPos(device.usbPath, usbRootPath);
         QString label = (ix < 0) ? device.usbPath : device.usbPath.mid(ix);
-        if (label.startsWith('.'))
-            label = label.mid(1);
-        ix = label.indexOf('_');
-        if (ix > 0)
+        // if (label.startsWith('.'))
+        //     label = label.mid(1);
+        ix = label.lastIndexOf(':');
+        if (ix > 0){
             label = label.left(ix);
+            ix = label.lastIndexOf('.');
+            if(ix>0){
+                label = label.mid(ix+1);
+            }
+        }
 
         d.deviceLabel = label;
         d.usbDevicePath = device.usbPath;
@@ -242,22 +250,16 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(
                 }
             }
         }
+        d.size = device.size;
         d.outputFileName = o;
-        d.serial = GetSerial(device);
+        d.serial = device.serial();
 
         m.devices.append(d);
     }
     return m;
 }
 
-QString MainPresenter::GetSerial(const DeviceStorage::DeviceModel &device){
-    QString s;
-    s+=device.usbPath;
-    for(auto&p:device.partitions){
-        s+="_"+p.label+"_"+p.project;
-    }
-    return s;
-}
+
 
 // writing: xxx bytes (yy.0MB)
 /*READ*/

@@ -16,6 +16,47 @@ DeviceStorage::DeviceStorage(QObject *parent) :QObject(parent)
                      this, &DeviceStorage::finished);
 }
 
+void DeviceStorage::GetPartitionData(DeviceModel *device)
+{
+    QString cmd= QStringLiteral("/home/pi/readsd/bin/readsd -m %1 -s Aladar123").arg(device->devPath);
+    auto out = _pollingProcessHelper.ShellExecute(cmd);
+
+    bool valid = out.exitCode==0 && !out.stdOut.isEmpty();
+    if(valid) {
+        QStringList lines = out.stdOut.split('\n');
+        for (QString &l : lines) {
+            if (l.isEmpty()) continue;
+            if(!l.startsWith("usbdrive")) return;
+
+            auto words=l.split('|');
+            if(words.count()<1) return;
+
+            for(int i=1;i<words.count();i++){
+                PartitionModel p = PartitionModel::Parse(words[i]);
+                if(!p.partPath.isEmpty()){
+                    device->partitions.append(p);
+                }
+            }
+        }
+    }
+}
+
+void DeviceStorage::Remove(const QString &devPath)
+{
+    int ix = indexOf(devPath);
+    if(ix>0){
+        _devices.removeAt(ix);
+    }
+}
+
+int DeviceStorage::indexOf(const QString &devPath){
+    for(int i=0;i<_devices.length();i++){
+        DeviceModel m = _devices[i];
+        if(m.devPath==devPath) return i;
+    }
+    return -1;
+}
+
 // DeviceStorage::DeviceStorage() {
 //     _pollingProcessHelper.SetPassword("Aladar123");
 //     QObject::connect(&_pollingProcessHelper, &ProcessHelper::finished,
@@ -48,12 +89,25 @@ void DeviceStorage::Init2(){
         auto s = ff.fileName();
         device.size = GetSize(s);
 
+        if(device.size>0){
+            GetPartitionData(&device);
+        }
         _devices.append(device);
     }
 
     emit initFinished();
     _isInPolling = false;
 }
+
+QString DeviceStorage::DeviceModel::serial() const{
+    QString s;
+    s+=usbPath;
+    for(auto&p:partitions){
+        s+="_"+p.label+"_"+p.project;
+    }
+    return s;
+}
+
 
 int DeviceStorage::GetSize(const QString& d){
     QFile f("/sys/block/"+d+"/size");
@@ -133,8 +187,8 @@ DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
     DeviceModel d {
         .devPath=words0[1],
         .usbPath=words0[2],
-        .serial=words0[3],
-            .size = 0,
+        //.serial=words0[3],
+        .size = 0,
         .partitions = {}
     };
 
@@ -172,7 +226,7 @@ QString DeviceStorage::DeviceModel::usbRootPath()
 
 DeviceStorage::PartitionModel DeviceStorage::PartitionModel::Parse(const QString &l)
 {
-    auto words=l.split(':');
+    auto words=l.split(',');
     if(words.count()<2) return {};
 
     PartitionModel p{

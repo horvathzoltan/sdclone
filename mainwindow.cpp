@@ -356,13 +356,29 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     // partitions
     QLabel *l2 = new QLabel();
     l2->setGeometry(QRect(0, 0, l2_width, height));
-    l2->setAlignment(Qt::AlignTop|Qt::AlignLeft);
+
     //l2->setMargin(2);
     QFont f2 = l2->font();
-    f2.setPointSize(6);
-    l2->setFont(f2);
 
-    QString txt = device.partitionLabels.join('\n');
+
+    QString txt =
+        (!device.partitionLabels.isEmpty())
+                      ?device.partitionLabels.join('\n')
+                      :(device.size>0
+                             ?QString::number(device.size)+" bytes"
+                             :"No card");
+
+    int u = txt.count('\n');
+    bool oneLine = u<1;
+    if(oneLine){
+        l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+        f2.setPointSize(12);
+        l2->setFont(f2);
+    } else{
+        l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+        f2.setPointSize(8);
+        l2->setFont(f2);
+    }
     l2->setText(txt);
 
     //QFrame* sep = new QFrame;
@@ -460,4 +476,32 @@ void MainWindow::set_ProgressText(const MainViewModel::StringModel &m)
 
 void MainWindow::set_ProgressLine(const MainViewModel::IntModel& m){
     ui->progressBar->setValue(m.value);
+}
+
+/**/
+
+void MainWindow::set_RemoveDevice(const MainViewModel::StringModel &m)
+{
+    QListWidgetItem* itemToDelete= nullptr;
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        if(item){
+            DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+            if(w){
+                if(w->_devicePath == m.txt){
+                    itemToDelete = item;
+                    set_StatusLine({"remove device:"+w->_usbDevicePath});
+                }
+            }
+        }
+    }
+    if(itemToDelete){
+        int row = ui->listWidget_devices->row(itemToDelete);
+        ui->listWidget_devices->takeItem(row);
+        DeviceWidget *w = (DeviceWidget *)(ui->listWidget_devices->itemWidget(itemToDelete));
+
+        ui->listWidget_devices->removeItemWidget(itemToDelete);
+        delete w;
+        delete itemToDelete;
+    }
 }

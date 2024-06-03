@@ -45,9 +45,7 @@ private:
 
     static MainViewModel::DeviceListModel DeviceModelToWm(
         const QList<DeviceStorage::DeviceModel>& devices,
-        const QString& usbRootPath);
-
-    static QString GetSerial(const DeviceStorage::DeviceModel &device);
+        const QString& usbRootPath);    
 
 
     //QTimer _devicePollTimer;
