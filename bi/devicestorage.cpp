@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QElapsedTimer>
+#include <QThread>
 
 extern ProcessHelper _processHelper;
 
@@ -41,10 +42,50 @@ void DeviceStorage::GetPartitionData(DeviceModel *device)
     }
 }
 
+
+DeviceStorage::DeviceModel DeviceStorage::Add(const QString &sysPath)
+{
+    QFileInfo fi(sysPath);
+
+    DeviceModel dev = CreateDevice_BySys(fi);
+    if(dev.isValid()){
+        _devices.append(dev);
+        return dev;
+    }
+
+    return {};
+}
+
+DeviceStorage::DeviceModel DeviceStorage::Update(const QString &devPath)
+{
+    //QFileInfo fi(sysPath);
+
+    int ix = indexOf(devPath);
+    if(ix>=0){
+        DeviceModel& device = _devices[ix];
+        device.partitions.clear();
+        device.size = 0;
+        ix = device.devPath.lastIndexOf('/');
+        if(ix>0){
+            QThread::msleep(300);
+
+            QString devname = device.devPath.mid(ix+1);
+            device.size = GetSize(devname);
+
+            if(device.size>0){
+                GetPartitionData(&device);
+            }
+            return device;
+        }
+    }
+
+    return {};
+}
+
 void DeviceStorage::Remove(const QString &devPath)
 {
     int ix = indexOf(devPath);
-    if(ix>0){
+    if(ix>=0){
         _devices.removeAt(ix);
     }
 }
@@ -63,40 +104,103 @@ int DeviceStorage::indexOf(const QString &devPath){
 //                      this, &DeviceStorage::finished);
 // }
 
+/*
+ *usb: 0:1.2.2.:1.0
+ *
+*/
 void DeviceStorage::Init2(){
     auto fileInfoList = FileHelper::GetSystemFiles("/dev/disk/by-path", {});
     //QStringList devicePaths = FileHelper::GetRootList(fileInfoList, "usb-0:1.2");
 
+    if(_usbRootPath.isEmpty()) return;
     _devices.clear();
-    _usbRootPath = "";
-    QString filter = "usb-0:1.2";
+    //_usbRootPath = "";
+    QString filter = "usb-"+_usbRootPath;
     for(auto&fi:fileInfoList){
         QString fileName = fi.fileName();
         if(!fileName.contains(filter)) continue;
-        auto target = fi.symLinkTarget();
-        int L = target.length();
-        QChar l = target.at(L-1);
-        if(l.isDigit()) continue;
-
-        QStringList tokens = fileName.split('-');
-        if(tokens.length()<6) continue;
-        DeviceModel device;// = DeviceModel::Parse(l);
-        device.devPath = target;
-        device.usbPath = tokens[5];//.replace(':','_');
-
-        QFileInfo ff(target);
-
-        auto s = ff.fileName();
-        device.size = GetSize(s);
-
-        if(device.size>0){
-            GetPartitionData(&device);
+        DeviceModel device = CreateDevice(fi);
+        if(device.isValid()){
+            _devices.append(device);
         }
-        _devices.append(device);
     }
 
     emit initFinished();
     _isInPolling = false;
+}
+// "add@/devices/platform/scb/fd500000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0/usb1/1-1/1-1.2/1-1.2.1/1-1.2.1:1.0/host2/target2:0:0/2:0:0:0/block/sdc"
+DeviceStorage::DeviceModel DeviceStorage::CreateDevice_BySys(const QFileInfo& fi){
+    QString fileName = fi.canonicalFilePath();
+
+    QString devFn = fi.fileName();
+    int ix = fileName.indexOf("/usb");
+    if(ix<=0) return {};
+    int ix2 = fileName.indexOf("/host");
+    if(ix2<=0) return {};
+    QString brutty = fileName.mid(ix+1,ix2-ix-1);
+    ix = brutty.lastIndexOf('/');
+    QString usbPath = brutty.mid(ix+1);
+
+    DeviceModel device;
+    device.devPath = "/dev/"+devFn;
+    device.usbPath = GetUsbPath(usbPath);
+
+    device.size = GetSize(devFn);
+
+    if(device.size>0){
+        QThread::msleep(300);
+        GetPartitionData(&device);
+    }
+    return device;
+}
+
+QString DeviceStorage::GetUsbPath(const QString& str){
+    int ix = str.indexOf('-');
+    if(ix<=0){
+        ix = str.indexOf(':');
+    }
+    if(ix<=0) return {};
+    QString u = str.mid(ix+1);
+    return u;
+}
+
+DeviceStorage::DeviceModel DeviceStorage::CreateDevice(const QFileInfo& fi){
+    //QFileInfo fi(fileName);
+    QString fileName = fi.fileName();
+
+    auto target = fi.symLinkTarget();
+    if(target.isEmpty()) return {};
+    int L = target.length();
+    QChar l = target.at(L-1);
+    if(l.isDigit()) return {};
+
+    QStringList tokens = fileName.split('-');
+    if(tokens.length()<6) return{};
+    DeviceModel device;// = DeviceModel::Parse(l);
+    device.devPath = target;
+    device.usbPath = GetUsbPath(tokens[5]);//.replace(':','_');
+
+    QFileInfo ff(target);
+
+    auto s = ff.fileName();
+    device.size = GetSize(s);
+
+    if(device.size>0){
+        GetPartitionData(&device);
+    }
+    return device;
+}
+
+QFileInfo DeviceStorage::FindByPath(const QString& devPath){
+    if(devPath.isEmpty()) return{};
+
+    auto fileInfoList = FileHelper::GetSystemFiles("/dev/disk/by-path", {});
+
+    for(auto&fi:fileInfoList){
+        QString target = fi.canonicalFilePath();
+        if(target == devPath) return fi;
+    }
+    return {};
 }
 
 QString DeviceStorage::DeviceModel::serial() const{
@@ -144,7 +248,7 @@ void DeviceStorage::Init()
 void DeviceStorage::finished()
 {
     _devices.clear();
-    _usbRootPath = "";
+    //_usbRootPath = "";
 
     ProcessHelper::Output out = _pollingProcessHelper.GetOut();
     bool valid = out.exitCode==0 && !out.stdOut.isEmpty();
@@ -161,7 +265,7 @@ void DeviceStorage::finished()
 
         if(!_devices.isEmpty()){
             DeviceModel device = _devices.first();
-            _usbRootPath =  device.usbRootPath();
+            //_usbRootPath =  device.usbRootPath();
         }
     }
 
@@ -169,10 +273,10 @@ void DeviceStorage::finished()
     _isInPolling = false;
 }
 
-QString DeviceStorage::usbRootPath()
-{
-    return _usbRootPath;
-}
+// QString DeviceStorage::usbRootPath()
+// {
+//     return _usbRootPath;
+// }
 
 DeviceStorage::DeviceModel DeviceStorage::DeviceModel::Parse(const QString &l)
 {

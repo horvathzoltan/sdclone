@@ -45,7 +45,11 @@ private:
 
     static MainViewModel::DeviceListModel DeviceModelToWm(
         const QList<DeviceStorage::DeviceModel>& devices,
-        const QString& usbRootPath);    
+        const QString& usbRootPath);
+
+    static MainViewModel::DeviceModel DeviceModelToWm(
+        const DeviceStorage::DeviceModel& device,
+        const QString& usbRootPath);
 
 
     //QTimer _devicePollTimer;
@@ -100,9 +104,9 @@ public slots:
     void stdErrReader(QByteArray&d);
     void finished();
 
-    void slotDeviceAdded(const QString& dev);
-    void slotDeviceRemoved(const QString& dev);
-    void slotDeviceChanged(const QString& dev);
+    void slotDeviceAdded(const QString& devPath);
+    void slotDeviceRemoved(const QString& devPath);
+    void slotDeviceChanged(const QString& devPath);
 };
 
 #endif // MAINPRESENTER_H

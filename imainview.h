@@ -21,6 +21,8 @@ public:
     virtual void set_DeviceList(const MainViewModel::DeviceListModel& m) = 0;
 
     virtual void set_RemoveDevice(const MainViewModel::StringModel& m) = 0;
+    virtual void set_AddDevice(const MainViewModel::DeviceModel& m) = 0;
+    virtual void set_UpdateDevice(const MainViewModel::DeviceModel& m) = 0;
 
     virtual void set_DeviceListClear() = 0;
     virtual MainViewModel::WriteStatusWM getLastWriteStatus() = 0;

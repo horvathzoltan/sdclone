@@ -35,6 +35,8 @@ private:
     void set_ProgressText(const MainViewModel::StringModel& m);
 
     void set_RemoveDevice(const MainViewModel::StringModel& m);
+    void set_AddDevice(const MainViewModel::DeviceModel& m);
+    void set_UpdateDevice(const MainViewModel::DeviceModel& m);
 
     MainViewModel::DeviceModel get_Device();
     MainViewModel::DeviceListModel get_DeviceList();
@@ -43,6 +45,10 @@ private:
 
     void SetDeviceWriteState(const MainViewModel::WriteStatus& m);
     bool devicesContainsBySerial(const QString& s);
+
+
+
+    QString GetL2Txt(const MainViewModel::DeviceModel &m);
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();

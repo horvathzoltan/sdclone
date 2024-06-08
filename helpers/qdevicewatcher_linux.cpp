@@ -243,13 +243,13 @@ void QDeviceWatcherPrivate::parseLine(const QByteArray &line)
     QDeviceChangeEvent *event = 0;
 
     if (action_str == QLatin1String("add")) {
-        emitDeviceAdded(dev);
+        emitDeviceAdded(dev+"|"+hutty);
         event = new QDeviceChangeEvent(QDeviceChangeEvent::Add, dev);
     } else if (action_str == QLatin1String("remove")) {
-        emitDeviceRemoved(dev);
+        emitDeviceRemoved(dev+"|"+hutty);
         event = new QDeviceChangeEvent(QDeviceChangeEvent::Remove, dev);
     } else if (action_str == QLatin1String("change")) {
-        emitDeviceChanged(dev);
+        emitDeviceChanged(dev+"|"+hutty);
         event = new QDeviceChangeEvent(QDeviceChangeEvent::Change, dev);
     }
 

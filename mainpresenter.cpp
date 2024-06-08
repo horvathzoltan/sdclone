@@ -33,8 +33,8 @@ MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
          _presenterState.handleInput(this, PresenterState::PollImages);
     });*/
 
-    QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
-                     this, SLOT(processInitFinished()));
+     QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
+                       this, SLOT(processInitFinished()));
 
 }
 
@@ -103,6 +103,7 @@ void MainPresenter::initView(IMainView *w) {
     //_imageFolderPollTimer.start(9000);
 
     //PollDevices();
+    _deviceStorage.setUsbRootPath("0:1.2");
     _deviceStorage.Init2();
 
     qw.appendEventReceiver(this);
@@ -124,31 +125,54 @@ void MainPresenter::initView(IMainView *w) {
     qw.start();
 };
 
-void MainPresenter::slotDeviceAdded(const QString& dev)
+void MainPresenter::slotDeviceAdded(const QString& str)
 {
-    //qDebug("tid=%#x: add %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
+    int ix = str.indexOf('|');
+    if(ix<=0) return;
+    QString devPath = str.left(ix);
+    int L = devPath.length();
+    QChar l = devPath.at(L-1);
+    if(l.isDigit()) return;
 
-    //state->setText("<font color=#0000ff>Add: </font>" + dev);
-    _views[0]->set_StatusLine({"New device:" +dev});
+    QString bruggy = str.mid(ix+1);
+    ix = bruggy.indexOf('@');
+    if(ix<=0) return;
+    QString sysPath = "/sys"+bruggy.mid(ix+1);
 
+    auto device = _deviceStorage.Add(sysPath);
+    if(device.isValid()){
+        auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath());
+        _views[0]->set_AddDevice({vm});
+        _views[0]->set_StatusLine({"New device:" +devPath});
+    }   
 }
 
-void MainPresenter::slotDeviceChanged(const QString& dev)
+void MainPresenter::slotDeviceChanged(const QString& str)
 {
-    //qDebug("tid=%#x: change %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
+    int ix = str.indexOf('|');
+    if(ix<=0) return;
+    QString devPath = str.left(ix);
 
-    //state->setText("<font color=#0000ff>Change: </font>" + dev);
-    _views[0]->set_StatusLine({"Change device:"+ dev});
+    auto device = _deviceStorage.Update(devPath);
+    if(device.isValid()){
+        auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath());
+        _views[0]->set_UpdateDevice({vm});
+        _views[0]->set_StatusLine({"Change device:" +devPath});
+    }
+    //_views[0]->set_StatusLine({"Change device:"+ dev});
 }
 
-void MainPresenter::slotDeviceRemoved(const QString& dev)
+void MainPresenter::slotDeviceRemoved(const QString& str)
 {
     //qDebug("tid=%#x: remove %s", (quintptr) QThread::currentThreadId(), qPrintable(dev));
 
     //state->setText("<font color=#0000ff>Remove: </font>" + dev);
-    _deviceStorage.Remove(dev);
-    _views[0]->set_RemoveDevice({dev});
-    _views[0]->set_StatusLine({"Remove device:"+ dev});
+    int ix = str.indexOf('|');
+    if(ix<=0) return;
+    QString devPath = str.left(ix);
+    _deviceStorage.Remove(devPath);
+    _views[0]->set_RemoveDevice({devPath});
+    _views[0]->set_StatusLine({"Remove device:"+ devPath});
 }
 
 void MainPresenter::processWriteAction(IMainView *sender)
@@ -217,46 +241,55 @@ MainViewModel::DeviceListModel MainPresenter::DeviceModelToWm(
     MainViewModel::DeviceListModel m;
 
     for (const DeviceStorage::DeviceModel &device : devices) {
-        MainViewModel::DeviceModel d;
-
-        int ix = findFirstDiffPos(device.usbPath, usbRootPath);
-        QString label = (ix < 0) ? device.usbPath : device.usbPath.mid(ix);
-        // if (label.startsWith('.'))
-        //     label = label.mid(1);
-        ix = label.lastIndexOf(':');
-        if (ix > 0){
-            label = label.left(ix);
-            ix = label.lastIndexOf('.');
-            if(ix>0){
-                label = label.mid(ix+1);
-            }
-        }
-
-        d.deviceLabel = label;
-        d.usbDevicePath = device.usbPath;
-        d.devicePath = device.devPath;
-        // d.serial = device.serial;
-        QString o;
-        //QString s;
-        //s += device.usbPath;
-        for (auto &p : device.partitions) {
-            d.partitionLabels.append(p.toString());
-            //s += "_" + p.label + "_" + p.project;
-            if (o.isEmpty()) {
-                if (!p.project.isEmpty()) {
-                    o = p.project;
-                } else {
-                    o = p.label;
-                }
-            }
-        }
-        d.size = device.size;
-        d.outputFileName = o;
-        d.serial = device.serial();
+        MainViewModel::DeviceModel d = DeviceModelToWm(device, usbRootPath);
 
         m.devices.append(d);
     }
     return m;
+}
+
+MainViewModel::DeviceModel MainPresenter::DeviceModelToWm(
+    const DeviceStorage::DeviceModel& device,
+    const QString& usbRootPath)
+{
+    MainViewModel::DeviceModel d;
+
+    int ix = findFirstDiffPos(device.usbPath, usbRootPath);
+    QString label = (ix < 0) ? device.usbPath : device.usbPath.mid(ix);
+    // if (label.startsWith('.'))
+    //     label = label.mid(1);
+    ix = label.lastIndexOf(':');
+    if (ix > 0){
+        label = label.left(ix);
+        ix = label.lastIndexOf('.');
+        if(ix>0){
+            label = label.mid(ix+1);
+        }
+    }
+
+    d.deviceLabel = label;
+    d.usbDevicePath = device.usbPath;
+    d.devicePath = device.devPath;
+    // d.serial = device.serial;
+    QString o;
+    //QString s;
+    //s += device.usbPath;
+    for (auto &p : device.partitions) {
+        d.partitionLabels.append(p.toString());
+        //s += "_" + p.label + "_" + p.project;
+        if (o.isEmpty()) {
+            if (!p.project.isEmpty()) {
+                o = p.project;
+            } else {
+                o = p.label;
+            }
+        }
+    }
+    d.size = device.size;
+    d.outputFileName = o;
+    d.serial = device.serial();
+
+    return d;
 }
 
 

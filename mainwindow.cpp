@@ -342,9 +342,9 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     l0->setGeometry(QRect(0, 0, l1_width, (height/3)));
 
     QFont f0 = l0->font();
-    f0.setPointSize(7);
+    f0.setPointSize(6);
     l0->setFont(f0);
-    l0->setText(device.serial);//serial
+    l0->setText(device.devicePath+" "+device.usbDevicePath);//serial
 
     l0->setMinimumSize(l1_width, (height/3));
     l0->setMaximumSize(l1_width, (height/3));
@@ -356,33 +356,6 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     // partitions
     QLabel *l2 = new QLabel();
     l2->setGeometry(QRect(0, 0, l2_width, height));
-
-    //l2->setMargin(2);
-    QFont f2 = l2->font();
-
-
-    QString txt =
-        (!device.partitionLabels.isEmpty())
-                      ?device.partitionLabels.join('\n')
-                      :(device.size>0
-                             ?QString::number(device.size)+" bytes"
-                             :"No card");
-
-    int u = txt.count('\n');
-    bool oneLine = u<1;
-    if(oneLine){
-        l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
-        f2.setPointSize(12);
-        l2->setFont(f2);
-    } else{
-        l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
-        f2.setPointSize(8);
-        l2->setFont(f2);
-    }
-    l2->setText(txt);
-
-    //QFrame* sep = new QFrame;
-    //sep->setFrameShape(QFrame::HLine);
 
     lay->addLayout(lay2);
     lay2->addWidget(l1);
@@ -406,6 +379,9 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
 
     w->setStatusLabel(l0);
     w->setLabelLabel(l1);
+    w->setL2(l2);
+    QString txt = GetL2Txt(device);
+    w->UpdateL2(txt);
     w->_devicePath = device.devicePath;
     w->_usbDevicePath = device.usbDevicePath;
     w->_outputFileName = device.outputFileName;
@@ -414,11 +390,13 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
 
     w->setGeometry(QRect(0, 0, width, height));
 
-    QPalette pal = QPalette();
+    //QPalette pal = QPalette();
     w->setDefaultBackground(Qt::GlobalColor::transparent);
 
     return w;
 }
+
+
 
 void MainWindow::on_pushButton_read_clicked()
 {
@@ -504,4 +482,58 @@ void MainWindow::set_RemoveDevice(const MainViewModel::StringModel &m)
         delete w;
         delete itemToDelete;
     }
+}
+
+void MainWindow::set_AddDevice(const MainViewModel::DeviceModel &device)
+{
+    bool contains = devicesContainsBySerial(device.serial);
+    if(!contains)
+    {
+        QSize s = ui->listWidget_devices->size();
+        DeviceWidget *w = CreateDeviceListItemWidget(device, s);
+        QListWidgetItem *item = new QListWidgetItem();
+
+        item->setSizeHint(QSize(w->width(),w->height()));
+        ui->listWidget_devices->addItem(item);
+        ui->listWidget_devices->setItemWidget(item, w);
+
+        set_StatusLine({"add device:"+device.usbDevicePath});
+    }
+}
+
+void MainWindow::set_UpdateDevice(const MainViewModel::DeviceModel& m){
+    QListWidgetItem* itemToUpdate= nullptr;
+    for(int row = 0; row < ui->listWidget_devices->count(); row++){
+        QListWidgetItem *item = ui->listWidget_devices->item(row);
+        if(item){
+            DeviceWidget *w = (DeviceWidget*)(ui->listWidget_devices->itemWidget(item));
+            if(w){
+                if(w->_devicePath == m.devicePath){
+                    itemToUpdate = item;
+                    set_StatusLine({"update device:"+w->_usbDevicePath});
+                }
+            }
+        }
+    }
+    if(itemToUpdate){
+        //int row = ui->listWidget_devices->row(itemToUpdate);
+        //ui->listWidget_devices->takeItem(row);
+        DeviceWidget *w = (DeviceWidget *)(ui->listWidget_devices->itemWidget(itemToUpdate));
+
+
+        if(w){
+            QString txt = GetL2Txt(m);
+            w->UpdateL2(txt);
+        }
+    }
+}
+
+QString MainWindow::GetL2Txt(const MainViewModel::DeviceModel& device){
+    QString txt =
+        (!device.partitionLabels.isEmpty())
+            ?device.partitionLabels.join('\n')
+            :(device.size>0
+                   ?QString::number(device.size)+" bytes"
+                   :"No card");
+    return txt;
 }

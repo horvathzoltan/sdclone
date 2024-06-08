@@ -40,3 +40,35 @@ void DeviceWidget::resetStatus()
     _labelLabel->setAutoFillBackground(true);
     _labelLabel->update();
 }
+
+int DeviceWidget::GetPt(const QString& txt){
+    QStringList as = txt.split('\n');
+    int l = 0;
+    for(auto&a:as){
+        if(a.length()>l)l=a.length();
+    }
+    if(l>25) return 6;
+    if(l>12) return 8;
+    return 12;
+}
+
+void DeviceWidget::UpdateL2(const QString &txt)
+{
+    int u = txt.count('\n');
+    bool oneLine = u<1;
+
+    QFont f2 = _l2->font();
+    if(oneLine){
+
+        _l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+        int pt = GetPt(txt);
+        f2.setPointSize(pt);
+        _l2->setFont(f2);
+    } else{
+        _l2->setAlignment(Qt::AlignVCenter|Qt::AlignLeft);
+        int pt = GetPt(txt);
+        f2.setPointSize(pt);
+        _l2->setFont(f2);
+    }
+    _l2->setText(txt);
+}
