@@ -377,9 +377,9 @@ DeviceWidget* MainWindow::CreateDeviceListItemWidget(const MainViewModel::Device
     w->setMaximumSize(width, height);
     w->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    w->setStatusLabel(l0);
-    w->setLabelLabel(l1);
-    w->setL2(l2);
+    w->setStatusLabel(l0);//devicePath
+    w->setLabelLabel(l1);//deviceLabel
+    w->setL2(l2);//partitions
     QString txt = GetL2Txt(device);
     w->UpdateL2(txt);
     w->_devicePath = device.devicePath;
