@@ -31,7 +31,7 @@ private:
     QList<IMainView*> _views;
     ImageStorage _imageStorage;
     DeviceStorage _deviceStorage;
-    MainViewModel::WriteStatusWM _wm;
+    MainViewModel::WriteStatusWM _writeStatus;
     qlonglong _writeBytesAll=0;
     int _writeBlockSize=0;
     qlonglong _writeBytes=0;
@@ -95,6 +95,9 @@ private:
     QFileSystemWatcher watcher_images;
     QFileSystemWatcher watcher_devices;
 
+    bool _connected = false;
+    void ConnectUdevs();
+    void DisconnectUdevs();
 private slots:
     void processReadAction(IMainView *sender);
     void processWriteAction(IMainView *sender);

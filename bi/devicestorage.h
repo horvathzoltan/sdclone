@@ -48,15 +48,17 @@ private:
     quint32 _pollingCounter = 0;
 
     bool _isInPolling=false;
-    QString _usbRootPath;
+    QString _usbRootPath_Sys;
     //QString _usbRoot;
     void GetPartitionData(DeviceModel *);
-    QString GetUsbPath(const QString& str);
+    //QString GetUsbPath_SysToDev(const QString& str);
+    QString GetUsbPath_SysToDev(const QString& str);
 
     int indexOf(const QString& devPath);
 public:
-    void setUsbRootPath(const QString& v){ _usbRootPath = v;}
-    QString usbRootPath(){return _usbRootPath;}
+    void setUsbRootPath_Sys(const QString& v){ _usbRootPath_Sys = v;}
+    QString usbRootPath_Sys(){return _usbRootPath_Sys;}
+    QString usbRootPath_Dev(){return GetUsbPath_SysToDev(_usbRootPath_Sys);}
 
     DeviceStorage::DeviceModel Add(const QString& devPath);
     void Remove(const QString& devPath);

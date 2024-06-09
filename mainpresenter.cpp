@@ -34,7 +34,7 @@ MainPresenter::MainPresenter(QObject *parent) :QObject(parent)
     });*/
 
      QObject::connect(&_deviceStorage, SIGNAL(initFinished()),
-                       this, SLOT(processInitFinished()));
+                        this, SLOT(processInitFinished()));
 
 }
 
@@ -103,27 +103,15 @@ void MainPresenter::initView(IMainView *w) {
     //_imageFolderPollTimer.start(9000);
 
     //PollDevices();
-    _deviceStorage.setUsbRootPath("0:1.2");
+    _deviceStorage.setUsbRootPath_Sys("0:1.2");
     _deviceStorage.Init2();
 
     qw.appendEventReceiver(this);
-    QObject::connect(&qw,
-            SIGNAL(deviceAdded(QString)),
-            this,
-            SLOT(slotDeviceAdded(QString)),
-            Qt::DirectConnection);
-    QObject::connect(&qw,
-            SIGNAL(deviceChanged(QString)),
-            this,
-            SLOT(slotDeviceChanged(QString)),
-            Qt::DirectConnection);
-    QObject::connect(&qw,
-            SIGNAL(deviceRemoved(QString)),
-            this,
-            SLOT(slotDeviceRemoved(QString)),
-            Qt::DirectConnection);
-    qw.start();
+    ConnectUdevs();
+    //qw.start();
 };
+
+
 
 void MainPresenter::slotDeviceAdded(const QString& str)
 {
@@ -141,9 +129,9 @@ void MainPresenter::slotDeviceAdded(const QString& str)
 
     auto device = _deviceStorage.Add(sysPath);
     if(device.isValid()){
-        auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath());
+        auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath_Sys());
         _views[0]->set_AddDevice({vm});
-        _views[0]->set_StatusLine({"New device:" +devPath});
+        //_views[0]->set_StatusLine({"New device:" +devPath});
     }   
 }
 
@@ -155,9 +143,9 @@ void MainPresenter::slotDeviceChanged(const QString& str)
 
     auto device = _deviceStorage.Update(devPath);
     if(device.isValid()){
-        auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath());
+        auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath_Sys());
         _views[0]->set_UpdateDevice({vm});
-        _views[0]->set_StatusLine({"Change device:" +devPath});
+        //_views[0]->set_StatusLine({"Change device:" +devPath});
     }
     //_views[0]->set_StatusLine({"Change device:"+ dev});
 }
@@ -172,7 +160,7 @@ void MainPresenter::slotDeviceRemoved(const QString& str)
     QString devPath = str.left(ix);
     _deviceStorage.Remove(devPath);
     _views[0]->set_RemoveDevice({devPath});
-    _views[0]->set_StatusLine({"Remove device:"+ devPath});
+    //_views[0]->set_StatusLine({"Remove device:"+ devPath});
 }
 
 void MainPresenter::processWriteAction(IMainView *sender)
@@ -220,6 +208,46 @@ void MainPresenter::RefreshImageFolder(){
     //     _views[0]->set_ImageFileList({});
     //     break;
     }
+}
+
+void MainPresenter::ConnectUdevs()
+{
+    if(_connected) return;
+
+    QObject::connect(&qw,
+                     SIGNAL(deviceAdded(QString)),
+                     this,
+                     SLOT(slotDeviceAdded(QString)),
+                     Qt::DirectConnection);
+    QObject::connect(&qw,
+                     SIGNAL(deviceChanged(QString)),
+                     this,
+                     SLOT(slotDeviceChanged(QString)),
+                     Qt::DirectConnection);
+    QObject::connect(&qw,
+                     SIGNAL(deviceRemoved(QString)),
+                     this,
+                     SLOT(slotDeviceRemoved(QString)),
+                     Qt::DirectConnection);
+    qw.start();
+    _connected = true;
+}
+
+void MainPresenter::DisconnectUdevs()
+{
+    if(!_connected) return;
+
+    QObject::disconnect(&qw,
+                        SIGNAL(deviceAdded(QString)),
+                        0,0);
+    QObject::connect(&qw,
+                     SIGNAL(deviceChanged(QString)),
+                     0,0);
+    QObject::connect(&qw,
+                     SIGNAL(deviceRemoved(QString)),
+                     0,0);
+    qw.stop();
+    _connected = false;
 }
 
 //a = _deviceStorage.usbRootPath();
@@ -477,6 +505,8 @@ void MainPresenter::finished()
     }
     _views[0]->set_StatusLine({"finished"});
 
+    ConnectUdevs();
+
     _presenterState.handleInput(this, PresenterState::None);
 }
 
@@ -504,14 +534,17 @@ void MainPresenter::Read(){
         return;
     }
 
+    QString usbDevicePath = a.usbDevicePath;
+
     _views[0]->set_StatusLine({"usbDevicePath:"+a.usbDevicePath});
     QDateTime now = QDateTime::currentDateTime();
     QString timestamp = now.toString(QLatin1String("yyyyMMdd-hhmmss"));
     QString o = a.outputFileName+"_"+timestamp;
     _views[0]->set_StatusLine({"outputFileName:"+o});
 
+    DisconnectUdevs();
     QString cmd = QStringLiteral("/home/pi/readsd/bin/readsd -p %1 -o %2 -s Aladar123 -f -u %3")
-                      .arg(_imageStorage.imageFolder(),o,a.usbDevicePath);
+                      .arg(_imageStorage.imageFolder(),o,usbDevicePath);
 
     qDebug()<<"cmd:"+cmd;
     _t.start();
@@ -529,16 +562,17 @@ void MainPresenter::Write()
     qDebug() << "processWriteAction";
     _views[0]->set_StatusLine({"processWriteAction"});
     _views[0]->set_ClearDeviceWriteStates();
-    _wm.clear();
+    _writeStatus.clear();
 
     _writeBytesAll = 0;
     _writeBlockSize = 0;
     _writeBytes = 0;
     _writeBytes2 = 0;
-    _writeTimer.restart();
+    _writeTimer.restart();//0:1.2
     _views[0]->set_ShowProgressbar();
 
-    QString usbDevicePath = _deviceStorage.usbRootPath();
+    //0:1.2
+    QString usbDevicePath = _deviceStorage.usbRootPath_Dev();//.replace(':','-');//"1-1.2";//
 
     if(usbDevicePath.isEmpty()){
         _views[0]->set_StatusLine({"no usbDevicePath"});
@@ -552,9 +586,11 @@ void MainPresenter::Write()
         _views[0]->set_StatusLine({"no inputFileName"});
         _presenterState.handleInput(this, PresenterState::None);
         return;
-    }        
+    }
 
+    //0:1.2
 
+    DisconnectUdevs();
     QString cmd = QStringLiteral("/home/pi/writesd2/bin/writesd2 -p %1 -i %2 -s Aladar123 -f -u %3")
                       .arg(_imageStorage.imageFolder(),m.txt,usbDevicePath);
 
@@ -597,28 +633,28 @@ void MainPresenter::PollDevices()
 void MainPresenter::PollImages()
 {
     RefreshImageFolder();
-    _presenterState.handleInput(this,PresenterState::None);
+    //_presenterState.handleInput(this,PresenterState::None);
     //_deviceStorage.Init();
 }
 
-void MainPresenter::processInitFinished()
-{
-    QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();   
-    if(devices.isEmpty()){
-        _views[0]->set_StatusLine({"usb devices not found"});
-        _views[0]->set_DeviceListClear();
-    } else{
-        MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices, _deviceStorage.usbRootPath());
-        _views[0]->set_DeviceList(deviceListWm);
-    }
+ void MainPresenter::processInitFinished()
+ {
+     QList<DeviceStorage::DeviceModel> devices = _deviceStorage.devices();
+     if(devices.isEmpty()){
+         _views[0]->set_StatusLine({"usb devices not found"});
+         _views[0]->set_DeviceListClear();
+     } else{
+         MainViewModel::DeviceListModel deviceListWm = MainPresenter::DeviceModelToWm(devices, _deviceStorage.usbRootPath_Sys());
+         _views[0]->set_DeviceList(deviceListWm);
+     }
 
-    if(!_wm.isEmpty()){
-        _views[0]->set_DeviceWriteStates(_wm);//beállítja a zöldet
-        _wm.clear();
-    }
-    _presenterState.handleInput(this,PresenterState::None);
+     // if(!_writeStatus.isEmpty()){
+     //     _views[0]->set_DeviceWriteStates(_writeStatus);//beállítja a zöldet
+     //     _writeStatus.clear();
+     // }
+     _presenterState.handleInput(this,PresenterState::None);
 
-}
+ }
 
 
 
@@ -627,11 +663,28 @@ void MainPresenter::Exit()
     QCoreApplication::quit();
 }
 
-void MainPresenter::ProcessWriteResult(){    
-    _wm = _views[0]->getLastWriteStatus();
-    _views[0]->set_DeviceListClear();
+void MainPresenter::ProcessWriteResult(){
+    // a ui-on a logba megy a státusz is, onnan kell kiszedni
+
+    //_views[0]->set_DeviceListClear();
     //_presenterState.handleInput(this, PresenterState::PollDevices);
-    PollDevices();
+    //PollDevices();
+
+    MainViewModel::DeviceListModel m = _views[0]->get_DeviceList();
+    for(auto&a:m.devices){
+        auto device = _deviceStorage.Update(a.devicePath);
+        if(device.isValid()){
+            auto vm = DeviceModelToWm(device, _deviceStorage.usbRootPath_Sys());
+            _views[0]->set_UpdateDevice({vm});
+            //_views[0]->set_StatusLine({"Written device:" +a.devicePath});
+        }
+    }
+
+    _writeStatus = _views[0]->getLastWriteStatus();
+    if(!_writeStatus.isEmpty()){
+         _views[0]->set_DeviceWriteStates(_writeStatus);//beállítja a zöldet
+         _writeStatus.clear();
+    }
 }
 
 void MainPresenter::PresenterState::handleInput(MainPresenter* presenter, State input)

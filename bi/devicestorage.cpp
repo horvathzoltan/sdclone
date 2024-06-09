@@ -112,10 +112,10 @@ void DeviceStorage::Init2(){
     auto fileInfoList = FileHelper::GetSystemFiles("/dev/disk/by-path", {});
     //QStringList devicePaths = FileHelper::GetRootList(fileInfoList, "usb-0:1.2");
 
-    if(_usbRootPath.isEmpty()) return;
+    if(_usbRootPath_Sys.isEmpty()) return;
     _devices.clear();
-    //_usbRootPath = "";
-    QString filter = "usb-"+_usbRootPath;
+    //_usbRootPath_Sys = "";
+    QString filter = "usb-"+_usbRootPath_Sys;
     for(auto&fi:fileInfoList){
         QString fileName = fi.fileName();
         if(!fileName.contains(filter)) continue;
@@ -143,7 +143,7 @@ DeviceStorage::DeviceModel DeviceStorage::CreateDevice_BySys(const QFileInfo& fi
 
     DeviceModel device;
     device.devPath = "/dev/"+devFn;
-    device.usbPath = GetUsbPath(usbPath);
+    device.usbPath = GetUsbPath_SysToDev(usbPath);
 
     device.size = GetSize(devFn);
 
@@ -154,15 +154,31 @@ DeviceStorage::DeviceModel DeviceStorage::CreateDevice_BySys(const QFileInfo& fi
     return device;
 }
 
-QString DeviceStorage::GetUsbPath(const QString& str){
-    int ix = str.indexOf('-');
-    if(ix<=0){
-        ix = str.indexOf(':');
-    }
+// QString DeviceStorage::GetUsbPath_ByDev(const QString& str){
+//     // int ix = str.indexOf('-');
+
+//     // if(ix<=0) return {};
+//     // QString u = str.mid(ix+1);
+//     // QString u0 = str.left(ix);
+
+//     // QString e = u0+'-'+u;
+//     return str;
+// }
+
+QString DeviceStorage::GetUsbPath_SysToDev(const QString& str){
+    int ix = str.indexOf(':');
+
     if(ix<=0) return {};
     QString u = str.mid(ix+1);
-    return u;
+    QString u0 = str.left(ix);
+    bool ok;
+    int i = u0.toInt(&ok);
+    if(!ok) return {};
+
+    QString e = QString::number(i+1)+'-'+u;
+    return e;
 }
+
 
 DeviceStorage::DeviceModel DeviceStorage::CreateDevice(const QFileInfo& fi){
     //QFileInfo fi(fileName);
@@ -178,7 +194,7 @@ DeviceStorage::DeviceModel DeviceStorage::CreateDevice(const QFileInfo& fi){
     if(tokens.length()<6) return{};
     DeviceModel device;// = DeviceModel::Parse(l);
     device.devPath = target;
-    device.usbPath = GetUsbPath(tokens[5]);//.replace(':','_');
+    device.usbPath = GetUsbPath_SysToDev(tokens[5]);//.replace(':','_');
 
     QFileInfo ff(target);
 

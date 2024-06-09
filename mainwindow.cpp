@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "QDebug"
 #include "devicewidget.h"
+#include <QScroller>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,6 +12,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->plainTextEdit_status->setVisible(false);
     ui->progressBar->setVisible(false);
     ui->label_progress->setVisible(false);
+    QScroller::grabGesture(ui->plainTextEdit_status, QScroller::LeftMouseButtonGesture);
+
+    // QScrollArea *scrollArea = new QScrollArea;
+    // scrollArea->setWidget(myWidget);
+    // QScroller::grabGesture(scrollArea, QScroller::LeftMouseButtonGesture);
 }
 
 MainWindow::~MainWindow()
@@ -77,12 +83,13 @@ MainViewModel::WriteStatusWM MainWindow::getLastWriteStatus(){
             QStringList b = a.mid(ix, ix2-ix).split('\n');
             for(auto&c:b){
                 if(c.startsWith("check:")){
-                    QStringList tokens = c.split(':');
-                    if(tokens.length()>=4){
+                    int ix = c.indexOf(':');
+                    QStringList tokens = c.mid(ix+1).split(',');
+                    if(tokens.length()>=3){
                         MainViewModel::WriteStatus m;
-                        m.devicePath = tokens[1];
-                        m.usbPath = tokens[2];
-                        m.status = tokens[3]=="OK";
+                        m.devicePath = tokens[0];
+                        m.usbPath = tokens[1];
+                        m.status = tokens[2]=="OK";
                         r.append(m);
                     }
                 }
@@ -520,10 +527,10 @@ void MainWindow::set_UpdateDevice(const MainViewModel::DeviceModel& m){
         //ui->listWidget_devices->takeItem(row);
         DeviceWidget *w = (DeviceWidget *)(ui->listWidget_devices->itemWidget(itemToUpdate));
 
-
         if(w){
             QString txt = GetL2Txt(m);
             w->UpdateL2(txt);
+            w->resetStatus();
         }
     }
 }
